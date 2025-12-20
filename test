@@ -5141,4 +5141,38 @@ function Library:Window(p)
         return Tabs
 end
 
+function Library:setBackgroundImage(imageId, transparency)
+    if not SaveTheme['BackgroundImage'] then
+        return
+    end
+    
+    for _, obj in pairs(SaveTheme['BackgroundImage']) do
+        local imageBackground = obj:FindFirstChild('ImageBackground')
+        
+        if imageId and imageId ~= '' then
+            if not imageBackground then
+                imageBackground = Instance.new("ImageLabel")
+                imageBackground.Name = "ImageBackground"
+                imageBackground.Parent = obj
+                imageBackground.BackgroundTransparency = 1
+                imageBackground.Size = UDim2.new(1, 0, 1, 0)
+                imageBackground.ScaleType = Enum.ScaleType.Crop
+                imageBackground.ZIndex = -1
+                
+                local uiCorner = Instance.new("UICorner")
+                uiCorner.CornerRadius = UDim.new(0, 17)
+                uiCorner.Parent = imageBackground
+            end
+            
+            imageBackground.Image = imageId
+            obj.BackgroundTransparency = transparency or 0.7
+        else
+            if imageBackground then
+                imageBackground:Destroy()
+            end
+            obj.BackgroundTransparency = 0
+        end
+    end
+end
+
 return Library
