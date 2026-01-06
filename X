@@ -1,0 +1,542 @@
+local HttpService = game:GetService("HttpService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+-- Утилитарные функции
+local function createUI(class, props)
+	local inst = Instance.new(class)
+	for prop, val in pairs(props) do
+		inst[prop] = val
+	end
+	return inst
+end
+
+local function copyToClipboard(text)
+	if setclipboard then
+		setclipboard(text)
+	else
+		warn("setclipboard не поддерживается в этой среде.")
+	end
+end
+
+local library = {}
+
+function library:CopyText(Text)
+	copyToClipboard(Text)
+end
+
+-- Стилизованные темы с Code элементами
+local Theme = {
+	Default = {
+		mainFrame = Color3.fromRGB(25, 25, 35),
+		NotifyFrame = Color3.fromRGB(30, 30, 45),
+		TextColor = Color3.fromRGB(240, 240, 245),
+		TabContent = Color3.fromRGB(20, 20, 30),
+		TabButtons = Color3.fromRGB(40, 40, 55),
+		Top = Color3.fromRGB(35, 35, 50),
+		Buttons = Color3.fromRGB(45, 45, 65),
+		Accent = Color3.fromRGB(0, 170, 255),
+		Success = Color3.fromRGB(0, 200, 120),
+		Warning = Color3.fromRGB(255, 180, 0),
+		Error = Color3.fromRGB(255, 80, 80),
+		CodeBackground = Color3.fromRGB(20, 25, 35),
+		CodeText = Color3.fromRGB(220, 220, 230),
+		CodeHighlight = {
+			Keyword = Color3.fromRGB(255, 100, 150),
+			String = Color3.fromRGB(100, 220, 100),
+			Number = Color3.fromRGB(255, 200, 100),
+			Comment = Color3.fromRGB(100, 150, 200),
+			Function = Color3.fromRGB(100, 180, 255),
+			Variable = Color3.fromRGB(220, 180, 255)
+		}
+	},
+	Cyberpunk = {
+		mainFrame = Color3.fromRGB(10, 10, 20),
+		NotifyFrame = Color3.fromRGB(20, 5, 40),
+		TextColor = Color3.fromRGB(0, 255, 255),
+		TabContent = Color3.fromRGB(15, 15, 30),
+		TabButtons = Color3.fromRGB(30, 0, 60),
+		Top = Color3.fromRGB(25, 0, 50),
+		Buttons = Color3.fromRGB(40, 0, 80),
+		Accent = Color3.fromRGB(255, 0, 255),
+		CodeBackground = Color3.fromRGB(15, 10, 30),
+		CodeText = Color3.fromRGB(220, 220, 255),
+		CodeHighlight = {
+			Keyword = Color3.fromRGB(255, 0, 200),
+			String = Color3.fromRGB(0, 255, 200),
+			Number = Color3.fromRGB(255, 255, 0),
+			Comment = Color3.fromRGB(150, 150, 200),
+			Function = Color3.fromRGB(100, 255, 255),
+			Variable = Color3.fromRGB(200, 100, 255)
+		}
+	},
+	Dracula = {
+		mainFrame = Color3.fromRGB(40, 42, 54),
+		NotifyFrame = Color3.fromRGB(68, 71, 90),
+		TextColor = Color3.fromRGB(248, 248, 242),
+		TabContent = Color3.fromRGB(50, 52, 65),
+		TabButtons = Color3.fromRGB(98, 114, 164),
+		Top = Color3.fromRGB(189, 147, 249),
+		Buttons = Color3.fromRGB(139, 233, 253),
+		Accent = Color3.fromRGB(255, 121, 198),
+		CodeBackground = Color3.fromRGB(30, 32, 44),
+		CodeText = Color3.fromRGB(248, 248, 242),
+		CodeHighlight = {
+			Keyword = Color3.fromRGB(255, 85, 85),
+			String = Color3.fromRGB(241, 250, 140),
+			Number = Color3.fromRGB(189, 147, 249),
+			Comment = Color3.fromRGB(98, 114, 164),
+			Function = Color3.fromRGB(80, 250, 123),
+			Variable = Color3.fromRGB(139, 233, 253)
+		}
+	},
+	Nord = {
+		mainFrame = Color3.fromRGB(46, 52, 64),
+		NotifyFrame = Color3.fromRGB(59, 66, 82),
+		TextColor = Color3.fromRGB(236, 239, 244),
+		TabContent = Color3.fromRGB(67, 76, 94),
+		TabButtons = Color3.fromRGB(76, 86, 106),
+		Top = Color3.fromRGB(129, 161, 193),
+		Buttons = Color3.fromRGB(94, 129, 172),
+		Accent = Color3.fromRGB(136, 192, 208),
+		CodeBackground = Color3.fromRGB(36, 42, 54),
+		CodeText = Color3.fromRGB(236, 239, 244),
+		CodeHighlight = {
+			Keyword = Color3.fromRGB(136, 192, 208),
+			String = Color3.fromRGB(163, 190, 140),
+			Number = Color3.fromRGB(208, 135, 112),
+			Comment = Color3.fromRGB(129, 161, 193),
+			Function = Color3.fromRGB(180, 142, 173),
+			Variable = Color3.fromRGB(143, 188, 187)
+		}
+	}
+}
+
+-- Функция для подсветки синтаксиса Lua
+local function highlightLuaSyntax(code)
+	local highlighted = code
+	
+	-- Ключевые слова Lua
+	local keywords = {
+		"and", "break", "do", "else", "elseif", "end", "false", "for", "function",
+		"if", "in", "local", "nil", "not", "or", "repeat", "return", "then",
+		"true", "until", "while"
+	}
+	
+	-- Встроенные функции Lua
+	local functions = {
+		"print", "warn", "error", "require", "typeof", "type", "next", "pairs",
+		"ipairs", "select", "tonumber", "tostring", "string", "math", "table",
+		"task", "wait", "delay", "spawn", "coroutine", "debug", "os", "io",
+		"game", "workspace", "script", "Instance", "Color3", "Vector3", "UDim2"
+	}
+	
+	-- Заменяем ключевые слова
+	for _, keyword in ipairs(keywords) do
+		local pattern = "%f[%w_]" .. keyword .. "%f[%W]"
+		highlighted = string.gsub(highlighted, pattern, 
+			function(match)
+				return '<font color="rgb(255,100,150)">' .. match .. '</font>'
+			end)
+	end
+	
+	-- Заменяем функции
+	for _, func in ipairs(functions) do
+		local pattern = "%f[%w_]" .. func .. "%s*%("
+		highlighted = string.gsub(highlighted, pattern, 
+			function(match)
+				return '<font color="rgb(100,180,255)">' .. string.sub(match, 1, -2) .. '</font>('
+			end)
+	end
+	
+	-- Строки (в кавычках)
+	highlighted = string.gsub(highlighted, '(["\'])(.-)%1', 
+		function(quote, content)
+			return quote .. '<font color="rgb(100,220,100)">' .. content .. '</font>' .. quote
+		end)
+	
+	-- Комментарии
+	highlighted = string.gsub(highlighted, "%-%-([^\n]*)", 
+		function(comment)
+			return '--<font color="rgb(100,150,200)">' .. comment .. '</font>'
+		end)
+	
+	-- Числа
+	highlighted = string.gsub(highlighted, "(%d+[%.%d]*)", 
+		function(number)
+			return '<font color="rgb(255,200,100)">' .. number .. '</font>'
+		end)
+	
+	return highlighted
+end
+
+-- Создание элемента Code из SaulGoodman библиотеки
+local function createCodeElement(parent, title, code, theme)
+	local container = createUI("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		BackgroundTransparency = 1,
+		Parent = parent
+	})
+	
+	-- Заголовок кода
+	local titleFrame = createUI("Frame", {
+		Size = UDim2.new(1, 0, 0, 30),
+		BackgroundColor3 = theme.CodeBackground,
+		BorderSizePixel = 0,
+		Parent = container
+	})
+	
+	local titleCorner = Instance.new("UICorner")
+	titleCorner.CornerRadius = UDim.new(0, 6)
+	titleCorner.Parent = titleFrame
+	
+	local titleLabel = createUI("TextLabel", {
+		Text = title,
+		Size = UDim2.new(1, -20, 1, 0),
+		Position = UDim2.new(0, 10, 0, 0),
+		BackgroundTransparency = 1,
+		TextColor3 = theme.TextColor,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = titleFrame
+	})
+	
+	-- Кнопка копирования
+	local copyButton = createUI("TextButton", {
+		Text = "📋",
+		Size = UDim2.new(0, 30, 0, 30),
+		Position = UDim2.new(1, -35, 0, 0),
+		BackgroundColor3 = theme.Accent,
+		BackgroundTransparency = 0.3,
+		TextColor3 = theme.TextColor,
+		Font = Enum.Font.GothamBold,
+		TextSize = 14,
+		Parent = titleFrame
+	})
+	
+	local copyCorner = Instance.new("UICorner")
+	copyCorner.CornerRadius = UDim.new(0, 4)
+	copyCorner.Parent = copyButton
+	
+	-- Область с кодом
+	local codeFrame = createUI("Frame", {
+		Size = UDim2.new(1, 0, 0, 0),
+		Position = UDim2.new(0, 0, 0, 35),
+		BackgroundColor3 = theme.CodeBackground,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Parent = container
+	})
+	
+	local codeCorner = Instance.new("UICorner")
+	codeCorner.CornerRadius = UDim.new(0, 6)
+	codeCorner.Parent = codeFrame
+	
+	-- Прокручиваемая область для кода
+	local scrollFrame = createUI("ScrollingFrame", {
+		Size = UDim2.new(1, 0, 1, 0),
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		BackgroundTransparency = 1,
+		ScrollBarThickness = 6,
+		ScrollBarImageColor3 = theme.Accent,
+		Parent = codeFrame
+	})
+	
+	-- Подсветка синтаксиса
+	local highlightedCode = highlightLuaSyntax(code)
+	
+	local codeLabel = createUI("TextLabel", {
+		Text = highlightedCode,
+		Size = UDim2.new(1, -10, 0, 0),
+		Position = UDim2.new(0, 5, 0, 5),
+		BackgroundTransparency = 1,
+		TextColor3 = theme.CodeText,
+		Font = Enum.Font.Code,
+		TextSize = 12,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top,
+		RichText = true,
+		TextWrapped = false,
+		Parent = scrollFrame
+	})
+	
+	-- Автоматический размер
+	local function updateSize()
+		local textSize = codeLabel.TextBounds
+		codeLabel.Size = UDim2.new(1, -10, 0, textSize.Y + 10)
+		scrollFrame.CanvasSize = UDim2.new(0, 0, 0, textSize.Y + 20)
+		
+		-- Рассчитываем высоту контейнера
+		local codeHeight = math.min(textSize.Y + 20, 200)
+		codeFrame.Size = UDim2.new(1, 0, 0, codeHeight)
+		container.Size = UDim2.new(1, 0, 0, 35 + codeHeight + 10)
+	end
+	
+	codeLabel:GetPropertyChangedSignal("TextBounds"):Connect(updateSize)
+	updateSize()
+	
+	-- Добавляем отступы
+	local padding = Instance.new("UIPadding")
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.PaddingTop = UDim.new(0, 10)
+	padding.PaddingBottom = UDim.new(0, 10)
+	padding.Parent = codeFrame
+	
+	-- Копирование кода
+	copyButton.MouseButton1Click:Connect(function()
+		copyToClipboard(code)
+		
+		-- Анимация копирования
+		TweenService:Create(copyButton, TweenInfo.new(0.2), {
+			Text = "✓",
+			BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+		}):Play()
+		
+		task.wait(1)
+		
+		TweenService:Create(copyButton, TweenInfo.new(0.2), {
+			Text = "📋",
+			BackgroundColor3 = theme.Accent
+		}):Play()
+	end)
+	
+	-- Анимация при наведении
+	copyButton.MouseEnter:Connect(function()
+		TweenService:Create(copyButton, TweenInfo.new(0.2), {
+			BackgroundTransparency = 0.1
+		}):Play()
+	end)
+	
+	copyButton.MouseLeave:Connect(function()
+		TweenService:Create(copyButton, TweenInfo.new(0.2), {
+			BackgroundTransparency = 0.3
+		}):Play()
+	end)
+	
+	-- API для управления
+	local api = {}
+	
+	function api:SetCode(newCode)
+		code = newCode
+		codeLabel.Text = highlightLuaSyntax(newCode)
+		updateSize()
+	end
+	
+	function api:SetTitle(newTitle)
+		titleLabel.Text = newTitle
+	end
+	
+	function api:GetCode()
+		return code
+	end
+	
+	return api
+end
+
+-- Основная функция создания окна (упрощенная версия)
+function library:CreateWindow(settings1, onLoad)
+	print("✨ Enhanced UI Library with Code Elements")
+	
+	-- Создание GUI
+	local gui
+	if RunService:IsStudio() then
+		gui = createUI("ScreenGui", {
+			Name = "EnhancedUILibrary",
+			ResetOnSpawn = false,
+			DisplayOrder = 999,
+			Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
+		})
+	else
+		gui = createUI("ScreenGui", {
+			Name = "EnhancedUILibrary",
+			ResetOnSpawn = false,
+			DisplayOrder = 999,
+			Parent = game:GetService("CoreGui")
+		})
+	end
+	
+	-- Создание основного окна
+	local window = { tabs = {} }
+	local themeName = settings1.Theme or "Default"
+	local selectedTheme = Theme[themeName] or Theme.Default
+	
+	-- Главный фрейм
+	local mainFrame = createUI("Frame", {
+		Name = "MainWindow",
+		Size = UDim2.new(0, 650, 0, 550),
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		BackgroundColor3 = selectedTheme.mainFrame,
+		BorderSizePixel = 0,
+		ClipsDescendants = true,
+		Parent = gui
+	})
+	
+	-- Закругление углов
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = mainFrame
+	
+	-- Верхняя панель
+	local titleBar = createUI("Frame", {
+		Size = UDim2.new(1, 0, 0, 45),
+		BackgroundColor3 = selectedTheme.Top,
+		BorderSizePixel = 0,
+		Parent = mainFrame
+	})
+	
+	local titleCorner = Instance.new("UICorner")
+	titleCorner.CornerRadius = UDim.new(0, 12, 0, 0)
+	titleCorner.Parent = titleBar
+	
+	local titleLabel = createUI("TextLabel", {
+		Text = settings1.Title or "Enhanced UI Library",
+		Size = UDim2.new(1, -20, 1, 0),
+		Position = UDim2.new(0, 10, 0, 0),
+		BackgroundTransparency = 1,
+		TextColor3 = selectedTheme.TextColor,
+		Font = Enum.Font.GothamBold,
+		TextSize = 18,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Parent = titleBar
+	})
+	
+	-- Фрейм для вкладок
+	local tabsFrame = createUI("ScrollingFrame", {
+		Size = UDim2.new(0, 160, 1, -45),
+		Position = UDim2.new(0, 0, 0, 45),
+		BackgroundColor3 = selectedTheme.TabContent,
+		BackgroundTransparency = 0.05,
+		BorderSizePixel = 0,
+		CanvasSize = UDim2.new(0, 0, 0, 0),
+		ScrollBarThickness = 4,
+		ScrollBarImageColor3 = selectedTheme.Accent,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		Parent = mainFrame
+	})
+	
+	-- Контейнер для контента
+	local contentHolder = createUI("Frame", {
+		Position = UDim2.new(0, 160, 0, 45),
+		Size = UDim2.new(1, -160, 1, -45),
+		BackgroundTransparency = 1,
+		ClipsDescendants = true,
+		Parent = mainFrame
+	})
+	
+	-- Функции окна
+	function window:ChangeTheme(newTheme)
+		if Theme[newTheme] then
+			selectedTheme = Theme[newTheme]
+			mainFrame.BackgroundColor3 = selectedTheme.mainFrame
+			titleBar.BackgroundColor3 = selectedTheme.Top
+			tabsFrame.BackgroundColor3 = selectedTheme.TabContent
+			tabsFrame.ScrollBarImageColor3 = selectedTheme.Accent
+			titleLabel.TextColor3 = selectedTheme.TextColor
+			
+			-- Обновляем все элементы...
+			print("Theme changed to:", newTheme)
+		end
+	end
+	
+	function window:Notify(opts)
+		local title = opts.Title or "Уведомление"
+		local message = opts.Message or "Сообщение"
+		local duration = opts.Duration or 5
+		
+		local notification = createUI("Frame", {
+			Size = UDim2.new(0, 300, 0, 0),
+			Position = UDim2.new(1, -310, 1, -10),
+			AnchorPoint = Vector2.new(1, 1),
+			BackgroundColor3 = selectedTheme.NotifyFrame,
+			BorderSizePixel = 0,
+			ClipsDescendants = true,
+			Parent = gui
+		})
+		
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0, 8)
+		corner.Parent = notification
+		
+		-- Анимация появления
+		TweenService:Create(notification, TweenInfo.new(0.3), {
+			Size = UDim2.new(0, 300, 0, 80)
+		}):Play()
+		
+		-- Автоматическое закрытие
+		task.delay(duration, function()
+			TweenService:Create(notification, TweenInfo.new(0.3), {
+				Size = UDim2.new(0, 300, 0, 0)
+			}):Play()
+			
+			task.wait(0.3)
+			notification:Destroy()
+		end)
+	end
+	
+	-- Функция создания вкладки
+	function window:CreateTab(name, icon)
+		local tab = {
+			elements = {},
+			content = createUI("ScrollingFrame", {
+				Size = UDim2.new(1, 0, 1, 0),
+				BackgroundTransparency = 1,
+				CanvasSize = UDim2.new(0, 0, 0, 0),
+				ScrollBarThickness = 8,
+				ScrollBarImageColor3 = selectedTheme.Accent,
+				Parent = contentHolder,
+				Visible = false
+			})
+		}
+		
+		-- Добавляем элементы вкладки
+		function tab:AddButton(opts)
+			local button = createUI("TextButton", {
+				Text = opts.Text,
+				Size = UDim2.new(1, 0, 0, 40),
+				BackgroundColor3 = selectedTheme.Buttons,
+				TextColor3 = selectedTheme.TextColor,
+				Font = Enum.Font.GothamBold,
+				TextSize = 14,
+				Parent = tab.content
+			})
+			
+			local corner = Instance.new("UICorner")
+			corner.CornerRadius = UDim.new(0, 6)
+			corner.Parent = button
+			
+			if opts.Callback then
+				button.MouseButton1Click:Connect(opts.Callback)
+			end
+			
+			return button
+		end
+		
+		-- Добавляем элемент Code
+		function tab:AddCode(opts)
+			local title = opts.Title or "Code Example"
+			local code = opts.Code or "-- Your code here"
+			
+			local codeElement = createCodeElement(tab.content, title, code, selectedTheme)
+			
+			table.insert(tab.elements, codeElement)
+			return codeElement
+		end
+		
+		-- Добавляем другие элементы...
+		
+		table.insert(window.tabs, tab)
+		return tab
+	end
+	
+	if onLoad then
+		onLoad(window)
+	end
+	
+	return window
+end
+
+return library
