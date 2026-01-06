@@ -1,4 +1,4 @@
-local ZeroLib = {}
+
 -- ZeroLib - Complete UI Library
 local ZeroLib = {Version = "3.0.0"}
 ZeroLib.__index = ZeroLib
