@@ -171,16 +171,29 @@ local ThemeBase = {
     }
 }
 
--- ФУНКЦИЯ АВТОГЕНЕРАЦИИ ТЕМ (ваша улучшенная система)
+-- ФУНКЦИЯ АВТОГЕНЕРАЦИИ ТЕМ (исправленная)
 local function generateFullTheme(base)
     local function adjustColor(rgb, adjust)
-        return Color3.fromRGB(
-            math.clamp(rgb[1] + adjust[1], 0, 255),
-            math.clamp(rgb[2] + adjust[2], 0, 255),
-            math.clamp(rgb[3] + adjust[3], 0, 255)
-        )
+        -- rgb - таблица {R, G, B}
+        -- adjust - таблица {dR, dG, dB} или одно число для всех каналов
+        local r, g, b
+        
+        -- Если adjust - число, применяем ко всем каналам
+        if type(adjust) == "number" then
+            r = math.clamp(rgb[1] + adjust, 0, 255)
+            g = math.clamp(rgb[2] + adjust, 0, 255)
+            b = math.clamp(rgb[3] + adjust, 0, 255)
+        else
+            -- Если adjust - таблица
+            r = math.clamp(rgb[1] + (adjust[1] or 0), 0, 255)
+            g = math.clamp(rgb[2] + (adjust[2] or 0), 0, 255)
+            b = math.clamp(rgb[3] + (adjust[3] or 0), 0, 255)
+        end
+        
+        return Color3.fromRGB(r, g, b) -- ФИКС: передаем отдельные числа
     end
     
+    -- Используем базовые цвета из ThemeBase
     local shadow = adjustColor(base.Shadow, {0,0,0})
     local background = adjustColor(base.Background, {0,0,0})
     local page = adjustColor(base.Page, {0,0,0})
@@ -199,70 +212,70 @@ local function generateFullTheme(base)
         
         ['Function'] = {
             ['Toggle'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5), -- Проще: число для всех каналов
                 ['True'] = {
-                    ['Toggle Background'] = adjustColor(base.Main, {-20,-20,-20}),
+                    ['Toggle Background'] = adjustColor(base.Main, -20),
                     ['Toggle Value'] = main
                 },
                 ['False'] = {
-                    ['Toggle Background'] = adjustColor(base.Background, {10,10,10}),
-                    ['Toggle Value'] = adjustColor(base.Background, {20,20,20})
+                    ['Toggle Background'] = adjustColor(base.Background, 10),
+                    ['Toggle Value'] = adjustColor(base.Background, 20)
                 }
             },
             ['Label'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5})
+                ['Background'] = adjustColor(base.Background, 5)
             },
             ['Dropdown'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5),
                 ['Value Background'] = page,
                 ['Value Stroke'] = text,
                 ['Dropdown Select'] = {
                     ['Background'] = page,
-                    ['Search'] = adjustColor(page, {10,10,10}),
-                    ['Item Background'] = adjustColor(page, {20,20,20})
+                    ['Search'] = adjustColor(base.Page, 10),
+                    ['Item Background'] = adjustColor(base.Page, 20)
                 }
             },
             ['Slider'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5),
                 ['Value Background'] = page,
                 ['Value Stroke'] = text,
-                ['Slider Bar'] = adjustColor(base.Main, {-10,-10,-10}),
+                ['Slider Bar'] = adjustColor(base.Main, -10),
                 ['Slider Bar Value'] = main,
                 ['Circle Value'] = text
             },
             ['Code'] = {
                 ['Background'] = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, adjustColor(base.Background, {5,5,5})),
-                    ColorSequenceKeypoint.new(1, adjustColor(base.Background, {5,5,5}))
+                    ColorSequenceKeypoint.new(0, adjustColor(base.Background, 5)),
+                    ColorSequenceKeypoint.new(1, adjustColor(base.Background, 5))
                 },
-                ['Background Code'] = adjustColor(base.Background, {10,10,10}),
-                ['Background Code Value'] = adjustColor(base.Background, {5,5,5}),
-                ['ScrollingFrame Code'] = adjustColor(base.Text, {30,30,30})
+                ['Background Code'] = adjustColor(base.Background, 10),
+                ['Background Code Value'] = adjustColor(base.Background, 5),
+                ['ScrollingFrame Code'] = adjustColor(base.Text, 30)
             },
             ['Button'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5),
                 ['Click'] = text
             },
             ['Textbox'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5),
                 ['Value Background'] = page,
                 ['Value Stroke'] = text
             },
             ['Keybind'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5),
                 ['Value Background'] = page,
                 ['Value Stroke'] = text,
                 ['True'] = {
-                    ['Toggle Background'] = adjustColor(base.Main, {-20,-20,-20}),
+                    ['Toggle Background'] = adjustColor(base.Main, -20),
                     ['Toggle Value'] = main
                 },
                 ['False'] = {
-                    ['Toggle Background'] = adjustColor(base.Background, {10,10,10}),
-                    ['Toggle Value'] = adjustColor(base.Background, {20,20,20})
+                    ['Toggle Background'] = adjustColor(base.Background, 10),
+                    ['Toggle Value'] = adjustColor(base.Background, 20)
                 }
             },
             ['Color Picker'] = {
-                ['Background'] = adjustColor(base.Background, {5,5,5}),
+                ['Background'] = adjustColor(base.Background, 5),
                 ['Color Select'] = {
                     ['Background'] = page,
                     ['UIStroke'] = text
