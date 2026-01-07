@@ -174,13 +174,22 @@ local ThemeBase = {
 -- ФУНКЦИЯ АВТОГЕНЕРАЦИИ ТЕМ (ваша улучшенная система)
 local function generateFullTheme(base)
     local function adjustColor(rgb, adjust)
-        return Color3.fromRGB(
-            math.clamp(rgb[1] + adjust[1], 0, 255),
-            math.clamp(rgb[2] + adjust[2], 0, 255),
-            math.clamp(rgb[3] + adjust[3], 0, 255)
-        )
+    -- Если adjust это число (например 5), делаем таблицу {5,5,5}
+    if type(adjust) == "number" then
+        adjust = {adjust, adjust, adjust}
     end
     
+    -- Теперь вычисляем как обычно
+    local r = rgb[1] + (adjust[1] or 0)
+    local g = rgb[2] + (adjust[2] or 0)
+    local b = rgb[3] + (adjust[3] or 0)
+    
+    return Color3.fromRGB(
+        math.clamp(r, 0, 255),
+        math.clamp(g, 0, 255),
+        math.clamp(b, 0, 255)
+    )
+end
     local shadow = adjustColor(base.Shadow, {0,0,0})
     local background = adjustColor(base.Background, {0,0,0})
     local page = adjustColor(base.Page, {0,0,0})
