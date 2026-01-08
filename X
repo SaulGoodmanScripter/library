@@ -365,7 +365,7 @@ end
 -- ==================== ОСНОВНЫЕ ФУНКЦИИ ====================
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "ZeroSystem"
-ScreenGui.Parent = not game:GetService("RunService"):IsStudio() and game:GetService("CoreGui") or game:GetService("Players").LocalPlayer.PlayerGui
+ScreenGui.Parent = game:GetService("Players").LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local U = game:GetService("UserInputService")
