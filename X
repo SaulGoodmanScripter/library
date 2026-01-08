@@ -335,7 +335,12 @@ function ZeroLib:applyColor(path, obj)
     elseif obj:IsA("UIStroke") then
         obj.Color = color
     elseif obj:IsA("UIGradient") then
-        obj.Color = color
+        -- Для UIGradient нужен ColorSequence
+        if typeof(color) == "Color3" then
+            obj.Color = ColorSequence.new(color)
+        elseif typeof(color) == "ColorSequence" then
+            obj.Color = color
+        end
     end
 end
 
