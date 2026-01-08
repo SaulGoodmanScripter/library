@@ -204,7 +204,7 @@ local function generateFullTheme(base)
     local main = adjustColor(base.Main, {0,0,0})
     local text = adjustColor(base.Text, {0,0,0})
     local accent = adjustColor(base.Accent, {0,0,0})
-    
+
     -- Автоматически генерируем Function цвета на основе основных
     return {
         ['Shadow'] = shadow,
@@ -213,7 +213,7 @@ local function generateFullTheme(base)
         ['Main'] = main,
         ['Text & Icon'] = text,
         ['Accent'] = accent,
-        
+
         ['Function'] = {
             ['Toggle'] = {
                 ['Background'] = adjustColor(base.Background, 5),
@@ -248,10 +248,7 @@ local function generateFullTheme(base)
                 ['Circle Value'] = text
             },
             ['Code'] = {
-                ['Background'] = ColorSequence.new{
-                    ColorSequenceKeypoint.new(0, adjustColor(base.Background, 5)),
-                    ColorSequenceKeypoint.new(1, adjustColor(base.Background, 5))
-                },
+                ['Background'] = adjustColor(base.Background, 5), -- Просто Color3 вместо ColorSequence
                 ['Background Code'] = adjustColor(base.Background, 10),
                 ['Background Code Value'] = adjustColor(base.Background, 5),
                 ['ScrollingFrame Code'] = adjustColor(base.Text, 30)
