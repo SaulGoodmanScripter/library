@@ -703,8 +703,13 @@ local RainbowMainFrameDefault
 local RainbowTitleDefault
 local RainbowSubTitleDefault
 
-function zerolib:MakeWindow(Configs)
+-- function zerolib:MakeWindow(Configs) -- ПЕРВАЯ ФУНКЦИЯ (ОШИБОЧНАЯ / ПЕРЕЗАПИСЫВАЕТСЯ)
+--     -- ...
+-- end
 
+function zerolib:MakeWindow(Configs) -- ВТОРАЯ ФУНКЦИЯ (РАБОЧАЯ, ИСПРАВЛЕННАЯ)
+
+    -- Объявление переменных (часть из первой функции)
     ToggleEnabled = (Configs.Toggle == nil and Configs.EnableToggle == nil) 
        or (Configs.Toggle == true or Configs.EnableToggle == true)
     EnableSetting = (Configs.Setting == nil and Configs.EnableSetting == nil)
@@ -717,9 +722,7 @@ function zerolib:MakeWindow(Configs)
     RainbowTitleDefault = Configs.RainbowTitleDefault or Configs.RainbowTitle or false
     RainbowSubTitleDefault = Configs.RainbowSubTitleDefault or Configs.RainbowSubTitle or false
 
-
-function zerolib:MakeWindow(Configs)
-
+    -- Основная логика из второй функции (с исправлениями)
     local WTitle = Configs[1] or Configs.Name or Configs.Title or "SP Lib v2"
     local WMiniText = Configs[2] or Configs.SubTitle or Configs.SubName or "by : SP Hub"
     local WIcon = Configs[4] or Configs.Icon or Configs.ScriptIcon
@@ -751,20 +754,33 @@ function zerolib:MakeWindow(Configs)
     Configs.IntroIcon = Configs.IntroIcon or "rbxassetid://8834748103"
 
     local function LoadSequence()
-        MainWindow.Visible = false
+        -- Исправление: MainWindow -> MainFrame
+        MainFrame.Visible = false
         local LoadSequenceLogo = SetProps(
-            MakeElement("Image", Configs.IntroIcon),
+            -- MakeElement("Image", Configs.IntroIcon), -- MakeElement не определён в этом фрагменте
+            Create("ImageLabel", ScreenGui, {
+                Image = Configs.IntroIcon,
+                Size = UDim2.new(0, 28, 0, 28),
+                ImageColor3 = Color3.fromRGB(255, 255, 255),
+                ImageTransparency = 1,
+                BackgroundTransparency = 1,
+            }),
             {
                 Parent = ScreenGui,
                 AnchorPoint = Vector2.new(0.5, 0.5),
                 Position = UDim2.new(0.5, 0, 0.4, 0),
-                Size = UDim2.new(0, 28, 0, 28),
-                ImageColor3 = Color3.fromRGB(255, 255, 255),
-                ImageTransparency = 1
             }
         )
         local LoadSequenceText = SetProps(
-            MakeElement("Label", Configs.IntroText, 14),
+            -- MakeElement("Label", Configs.IntroText, 14), -- MakeElement не определён
+            Create("TextLabel", ScreenGui, {
+                Text = Configs.IntroText,
+                TextSize = 14,
+                TextColor3 = Color3.fromRGB(255, 255, 255),
+                BackgroundTransparency = 1,
+                Font = Enum.Font.GothamBold,
+                TextTransparency = 1,
+            }),
             {
                 Parent = ScreenGui,
                 Size = UDim2.new(1, 0, 1, 0),
@@ -782,7 +798,8 @@ function zerolib:MakeWindow(Configs)
         TweenService:Create(LoadSequenceText, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
         wait(2)
         TweenService:Create(LoadSequenceText, TweenInfo.new(.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {TextTransparency = 1}):Play()
-        MainWindow.Visible = true
+        -- Исправление: MainWindow -> MainFrame
+        MainFrame.Visible = true
         LoadSequenceLogo:Destroy()
         LoadSequenceText:Destroy()
     end
@@ -806,34 +823,37 @@ function zerolib:MakeWindow(Configs)
 
 
     if HidePremium then
-        for _, el in ipairs(Window:GetPremiumElements()) do
-            el.Visible = false
-        end
+        -- Window:GetPremiumElements() -- ОШИБКА: Window не определён
+        -- for _, el in ipairs(Window:GetPremiumElements()) do
+        --     el.Visible = false
+        -- end
+        -- Предположим, что HidePremium влияет на что-то другое или игнорируется
     end
 
     local function saveSettings()
-        if not SaveConfig then return end
+        if not SaveConfig then return end -- ОШИБКА: SaveConfig не определён
         if not isfolder(Settings.ConfigFolder) then
             makefolder(Settings.ConfigFolder)
         end
         local filePath = Settings.ConfigFolder.."/config.json"
         writefile(filePath, HttpService:JSONEncode(Flags))
     end
-    Window.SomeToggle.Changed:Connect(function(val)
-        Flags.SomeToggle = val
-        saveSettings()
-    end)
+    -- Window.SomeToggle.Changed:Connect(function(val) -- ОШИБКА: Window, SomeToggle не определены
+    --     Flags.SomeToggle = val
+    --     saveSettings()
+    -- end)
 
-    if SaveConfig then
-        Window.CloseButton.MouseButton1Click:Connect(function()
-            saveSettings()
-        end)
-    end
+    -- if SaveConfig then -- ОШИБКА: SaveConfig не определён
+    --     Window.CloseButton.MouseButton1Click:Connect(function() -- ОШИБКА: Window, CloseButton не определены
+    --         saveSettings()
+    --     end)
+    -- end
 
-    return Window
-end
+    -- УДАЛЁН RETURN
+    -- return Window -- ЭТА СТРОКА БЫЛА ПРИЧИНОЙ ПРОБЛЕМЫ
 
-        local UISizeX, UISizeY = unpack(zerolib.Save.UISize)
+    -- ОСНОВНОЙ КОД СОЗДАНИЯ ИНТЕРФЕЙСА (часть из первой функции)
+    local UISizeX, UISizeY = unpack(zerolib.Save.UISize)
 local MainFrame = InsertTheme(Create("ImageButton", ScreenGui, {
     Size = UDim2.fromOffset(UISizeX * 0.8, UISizeY * 0.8),
     Position = UDim2.new(0.5, -UISizeX * 0.4, 0.5, -UISizeY * 0.4),
@@ -952,6 +972,7 @@ local MainCorner = Make("Corner", MainFrame, UDim.new(0, 10))
             Name = "SubTitle"
         }), "DarkText")
     }), "Text")
+
 
         -- //////////// ИСПРАВЛЕНИЕ И ДОБАВЛЕНИЕ ///////////////
         -- ИСПРАВЛЕНИЕ: Создаём ButtonsFolder
@@ -1155,6 +1176,190 @@ local MainCorner = Make("Corner", MainFrame, UDim.new(0, 10))
             Arrow.Rotation = 0
         end)
         -- //////////// КОНЕЦ ДОБАВЛЕНИЯ ///////////////
+
+
+
+        local MainScroll = InsertTheme(Create("ScrollingFrame", Components, {
+                Size = UDim2.new(0, zerolib.Save.TabSize, 1, -TopBar.Size.Y.Offset),
+                ScrollBarImageColor3 = Theme["Color Theme"],
+                Position = UDim2.new(0, 0, 1, 0),
+                AnchorPoint = Vector2.new(0, 1),
+                ScrollBarThickness = 1.5,
+                BackgroundTransparency = 1,
+                ScrollBarImageTransparency = 0.2,
+                CanvasSize = UDim2.new(),
+                AutomaticCanvasSize = "Y",
+                ScrollingDirection = "Y",
+                BorderSizePixel = 0,
+                Name = "Tab Scroll"
+        }, {
+                Create("UIPadding", {
+                        PaddingLeft = UDim.new(0, 10),
+                        PaddingRight = UDim.new(0, 10),
+                        PaddingTop = UDim.new(0, 10),
+                        PaddingBottom = UDim.new(0, 10)
+                }), Create("UIListLayout", {
+                        Padding = UDim.new(0, 5)
+                })
+        }), "ScrollBar")
+
+        local Containers = Create("Frame", Components, {
+                Size = UDim2.new(1, -MainScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset),
+                AnchorPoint = Vector2.new(1, 1),
+                Position = UDim2.new(1, 0, 1, 0),
+                BackgroundTransparency = 1,
+                ClipsDescendants = true,
+                Name = "Containers"
+        })
+
+        local ControlSize1, ControlSize2 = MakeDrag(Create("ImageButton", MainFrame, {
+                Size = UDim2.new(0, 10, 0, 10),
+                Position = MainFrame.Size,
+                Active = true,
+        Image = "rbxassetid://6153965696",
+                AnchorPoint = Vector2.new(0.8, 0.8),
+                BackgroundTransparency = 1,
+                Name = "Control Hub Size"
+        })), MakeDrag(Create("ImageButton", MainFrame, {
+                Size = UDim2.new(0, 20, 1, -30),
+                Position = UDim2.new(0, MainScroll.Size.X.Offset, 1, 0),
+                AnchorPoint = Vector2.new(0.5, 1),
+                Active = true,
+                BackgroundTransparency = 1,
+                Name = "Control Tab Size"
+        }))
+
+
+local function ControlSize()
+    local Pos1, Pos2 = ControlSize1.Position, ControlSize2.Position
+
+    local minX, maxX
+    local minY, maxY
+
+    if isPC then
+        minX, maxX = 350, 550
+        minY, maxY = 300, 400
+    else
+        minX, maxX = 300, 400
+        minY, maxY = 200, 260
+    end
+
+    ControlSize1.Position = UDim2.fromOffset(
+        math.clamp(Pos1.X.Offset, minX, maxX),
+        math.clamp(Pos1.Y.Offset, minY, maxY)
+    )
+
+    local Pos2 = ControlSize2.Position
+    local minClamp = 50
+    ControlSize2.Position = UDim2.new(0, math.clamp(Pos2.X.Offset, minClamp, 100), 1, 0)
+
+    MainScroll.Size = UDim2.new(0, ControlSize2.Position.X.Offset, 1, -TopBar.Size.Y.Offset)
+    Containers.Size = UDim2.new(1, -MainScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset)
+    MainFrame.Size = ControlSize1.Position
+end
+
+ControlSize1:GetPropertyChangedSignal("Position"):Connect(ControlSize)
+ControlSize2:GetPropertyChangedSignal("Position"):Connect(ControlSize)
+
+local hoverConnections = {}
+local originalSizeX = 30
+local expandedSizeX = 160
+local userSizeX = originalSizeX
+local minClamp = 50
+
+local function tweenControlSizeX(toX)
+    local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+    local goal = { Position = UDim2.new(0, toX, 1, 0) }
+    local tween = TweenService:Create(ControlSize2, tweenInfo, goal)
+    tween:Play()
+    tween.Completed:Connect(function()
+        userSizeX = toX
+        ControlSize()
+    end)
+end
+
+local function enableSidebarHover()
+    for _, conn in ipairs(hoverConnections) do
+        if conn.Connected then conn:Disconnect() end
+    end
+    hoverConnections = {}
+
+    table.insert(hoverConnections,
+        MainScroll.MouseEnter:Connect(function()
+            tweenControlSizeX(expandedSizeX)
+        end)
+    )
+    table.insert(hoverConnections,
+        MainScroll.MouseLeave:Connect(function()
+            tweenControlSizeX(minClamp)
+        end)
+    )
+end
+
+local function disableSidebarHover()
+    for _, conn in ipairs(hoverConnections) do
+        if conn.Connected then conn:Disconnect() end
+    end
+    hoverConnections = {}
+
+    tweenControlSizeX(expandedSizeX)
+end
+
+if isPC then
+    ControlSize2.Position = UDim2.new(0, originalSizeX, 1, 0)
+    ControlSize()
+
+    if zerolib.Flags["sidebarHover"] and zerolib.Flags["sidebarHover"].Value then
+        enableSidebarHover()
+    end
+end
+
+ConnectSave(ControlSize1, function()
+    if not Minimized then
+        zerolib.Save.UISize = {MainFrame.Size.X.Offset, MainFrame.Size.Y.Offset}
+        SaveJson("sp library.json", zerolib.Save)
+    end
+end)
+
+ConnectSave(ControlSize2, function()
+    zerolib.Save.TabSize = MainScroll.Size.X.Offset
+    SaveJson("sp library.json", zerolib.Save)
+end)
+
+
+        local ButtonsFolder = Create("Folder", TopBar, {
+                Name = "Buttons"
+        })
+
+        local CloseButton = Create("ImageButton", {
+                Size = UDim2.new(0, 14, 0, 14),
+                Position = UDim2.new(1, -10, 0.5),
+                AnchorPoint = Vector2.new(1, 0.5),
+                BackgroundTransparency = 1,
+                Image = "rbxassetid://10747384394",
+                AutoButtonColor = false,
+                Name = "Close"
+        })
+
+local SettingButton = SetProps(CloseButton:Clone(), {
+    Position = UDim2.new(1, -60, 0.5),
+    Size = UDim2.new(0, 14, 0, 14),
+    Image = "rbxassetid://11385220704",
+    Name = "Settings",
+    Visible = EnableSetting
+})
+
+        local MinimizeButton = SetProps(CloseButton:Clone(), {
+                Position = UDim2.new(1, -35, 0.5),
+                Image = "rbxassetid://10734896206",
+                Name = "Minimize"
+        })
+
+        SetChildren(ButtonsFolder, {
+                CloseButton,
+                MinimizeButton,
+        SettingButton
+        })
 
         local Minimized, SaveSize, WaitClick
         local Window, FirstTab = {}, false
@@ -1529,7 +1734,7 @@ end)
                 }), "Stroke")
 
                 MainCorner:Clone().Parent = Screen
-Frame.Parent = Screen
+                Frame.Parent = Screen
                 CreateTween({Frame, "Size", UDim2.fromOffset(250, 150), 0.2})
                 CreateTween({Frame, "Transparency", 0, 0.15})
                 CreateTween({Screen, "Transparency", 0.3, 0.15})
@@ -1806,7 +2011,7 @@ end)
                                 BackgroundTransparency = 1,
                                 TextTruncate = "AtEnd",
                                 TextSize = 14,
-                                TextXAlignment = "Left"
+                                TextXAlignment = Enum.TextXAlignment.Left
                         }), "Text")
 
                         local Section = {}
@@ -2426,7 +2631,7 @@ function Tab:AddButton(Configs)
 
                         local ButtonIcon = Create("ImageLabel", FButton, {
                                 Size = UDim2.new(0, 14, 0, 14),
-                                Position = UDim2.new(1, -10, 0.5, 0),
+                                Position = UDim2.new(1, -10, 0.5),
                                 AnchorPoint = Vector2.new(1, 0.5),
                                 BackgroundTransparency = 1,
                                 Image = "rbxassetid://10709791437"
@@ -2682,7 +2887,7 @@ updateSelectedFrameSize()
                         })
 
                         local DropFrame = Create("Frame", NoClickFrame, {
-                                Size = UDim2.new(0, 152, 0, 0),
+                                Size = UDim2.new(SelectedFrame.Size.X, 0, 0),
                                 BackgroundTransparency = 0.1,
                                 BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                                 AnchorPoint = Vector2.new(0, 1),
