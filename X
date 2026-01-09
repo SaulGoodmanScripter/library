@@ -28,7 +28,7 @@ local zerolib = {
     Icons = loadstring(game:HttpGet("https://raw.githubusercontent.com/as6cd0/splibv2/main/Icons.lua "))()
 }
 
--- ok this is redz lib v5 but now its for sp cuz its has edited in full! and  big improvent and added more functions by sp to contact the the dev discord @nadermohamed22
+-- ok this is redz lib v5 but now its for sp cuz its has edited in full! and big improvent and added more functions by sp to contact the the dev discord @nadermohamed22 (now with TopBar theme selector!)
 local Binds = {}
 local Toggles = {}
 
@@ -953,177 +953,13 @@ local MainCorner = Make("Corner", MainFrame, UDim.new(0, 10))
         }), "DarkText")
     }), "Text")
 
-        local MainScroll = InsertTheme(Create("ScrollingFrame", Components, {
-                Size = UDim2.new(0, zerolib.Save.TabSize, 1, -TopBar.Size.Y.Offset),
-                ScrollBarImageColor3 = Theme["Color Theme"],
-                Position = UDim2.new(0, 0, 1, 0),
-                AnchorPoint = Vector2.new(0, 1),
-                ScrollBarThickness = 1.5,
-                BackgroundTransparency = 1,
-                ScrollBarImageTransparency = 0.2,
-                CanvasSize = UDim2.new(),
-                AutomaticCanvasSize = "Y",
-                ScrollingDirection = "Y",
-                BorderSizePixel = 0,
-                Name = "Tab Scroll"
-        }, {
-                Create("UIPadding", {
-                        PaddingLeft = UDim.new(0, 10),
-                        PaddingRight = UDim.new(0, 10),
-                        PaddingTop = UDim.new(0, 10),
-                        PaddingBottom = UDim.new(0, 10)
-                }), Create("UIListLayout", {
-                        Padding = UDim.new(0, 5)
-                })
-        }), "ScrollBar")
-
---[[
- local SearchBox = Create("TextBox", MainScroll, {
-    Size = UDim2.new(1, 0, 0, 24),
-    Position = UDim2.new(0, 0, 0, 0),
-    BackgroundColor3 = Color3.fromRGB(13, 13, 13),
-    PlaceholderText = "Search",
-    Text = "",
-    TextXAlignment = Enum.TextXAlignment.Left,
-    TextTruncate = Enum.TextTruncate.AtEnd,
-    TextColor3 = Color3.fromRGB(255, 255, 255),
-    ClearTextOnFocus = false,
-    Font = Enum.Font.Gotham,
-    TextSize = 10,
-    TextWrapped = false,
-})
-Make("Corner", SearchBox)
-]]
-
-
-        local Containers = Create("Frame", Components, {
-                Size = UDim2.new(1, -MainScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset),
-                AnchorPoint = Vector2.new(1, 1),
-                Position = UDim2.new(1, 0, 1, 0),
-                BackgroundTransparency = 1,
-                ClipsDescendants = true,
-                Name = "Containers"
-        })
-
-        local ControlSize1, ControlSize2 = MakeDrag(Create("ImageButton", MainFrame, {
-                Size = UDim2.new(0, 10, 0, 10),
-                Position = MainFrame.Size,
-                Active = true,
-        Image = "rbxassetid://6153965696",
-                AnchorPoint = Vector2.new(0.8, 0.8),
-                BackgroundTransparency = 1,
-                Name = "Control Hub Size"
-        })), MakeDrag(Create("ImageButton", MainFrame, {
-                Size = UDim2.new(0, 20, 1, -30),
-                Position = UDim2.new(0, MainScroll.Size.X.Offset, 1, 0),
-                AnchorPoint = Vector2.new(0.5, 1),
-                Active = true,
-                BackgroundTransparency = 1,
-                Name = "Control Tab Size"
-        }))
-
-
-local function ControlSize()
-    local Pos1, Pos2 = ControlSize1.Position, ControlSize2.Position
-
-    local minX, maxX
-    local minY, maxY
-
-    if isPC then
-        minX, maxX = 350, 550
-        minY, maxY = 300, 400
-    else
-        minX, maxX = 300, 400
-        minY, maxY = 200, 260
-    end
-
-    ControlSize1.Position = UDim2.fromOffset(
-        math.clamp(Pos1.X.Offset, minX, maxX),
-        math.clamp(Pos1.Y.Offset, minY, maxY)
-    )
-
-    local Pos2 = ControlSize2.Position
-    local minClamp = 50
-    ControlSize2.Position = UDim2.new(0, math.clamp(Pos2.X.Offset, minClamp, 100), 1, 0)
-
-    MainScroll.Size = UDim2.new(0, ControlSize2.Position.X.Offset, 1, -TopBar.Size.Y.Offset)
-    Containers.Size = UDim2.new(1, -MainScroll.Size.X.Offset, 1, -TopBar.Size.Y.Offset)
-    MainFrame.Size = ControlSize1.Position
-end
-
-ControlSize1:GetPropertyChangedSignal("Position"):Connect(ControlSize)
-ControlSize2:GetPropertyChangedSignal("Position"):Connect(ControlSize)
-
-local hoverConnections = {}
-local originalSizeX = 30
-local expandedSizeX = 160
-local userSizeX = originalSizeX
-local minClamp = 50
-
-local function tweenControlSizeX(toX)
-    local tweenInfo = TweenInfo.new(0.25, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-    local goal = { Position = UDim2.new(0, toX, 1, 0) }
-    local tween = TweenService:Create(ControlSize2, tweenInfo, goal)
-    tween:Play()
-    tween.Completed:Connect(function()
-        userSizeX = toX
-        ControlSize()
-    end)
-end
-
-local function enableSidebarHover()
-    for _, conn in ipairs(hoverConnections) do
-        if conn.Connected then conn:Disconnect() end
-    end
-    hoverConnections = {}
-
-    table.insert(hoverConnections,
-        MainScroll.MouseEnter:Connect(function()
-            tweenControlSizeX(expandedSizeX)
-        end)
-    )
-    table.insert(hoverConnections,
-        MainScroll.MouseLeave:Connect(function()
-            tweenControlSizeX(minClamp)
-        end)
-    )
-end
-
-local function disableSidebarHover()
-    for _, conn in ipairs(hoverConnections) do
-        if conn.Connected then conn:Disconnect() end
-    end
-    hoverConnections = {}
-
-    tweenControlSizeX(expandedSizeX)
-end
-
-if isPC then
-    ControlSize2.Position = UDim2.new(0, originalSizeX, 1, 0)
-    ControlSize()
-
-    if zerolib.Flags["sidebarHover"] and zerolib.Flags["sidebarHover"].Value then
-        enableSidebarHover()
-    end
-end
-
-ConnectSave(ControlSize1, function()
-    if not Minimized then
-        zerolib.Save.UISize = {MainFrame.Size.X.Offset, MainFrame.Size.Y.Offset}
-        SaveJson("sp library.json", zerolib.Save)
-    end
-end)
-
-ConnectSave(ControlSize2, function()
-    zerolib.Save.TabSize = MainScroll.Size.X.Offset
-    SaveJson("sp library.json", zerolib.Save)
-end)
-
-
+        -- //////////// ИСПРАВЛЕНИЕ И ДОБАВЛЕНИЕ ///////////////
+        -- ИСПРАВЛЕНИЕ: Создаём ButtonsFolder
         local ButtonsFolder = Create("Folder", TopBar, {
                 Name = "Buttons"
         })
 
+        -- Создаём кнопки
         local CloseButton = Create("ImageButton", {
                 Size = UDim2.new(0, 14, 0, 14),
                 Position = UDim2.new(1, -10, 0.5),
@@ -1134,13 +970,13 @@ end)
                 Name = "Close"
         })
 
-local SettingButton = SetProps(CloseButton:Clone(), {
-    Position = UDim2.new(1, -60, 0.5),
-    Size = UDim2.new(0, 14, 0, 14),
-    Image = "rbxassetid://11385220704",
-    Name = "Settings",
-    Visible = EnableSetting
-})
+        local SettingButton = SetProps(CloseButton:Clone(), {
+            Position = UDim2.new(1, -60, 0.5),
+            Size = UDim2.new(0, 14, 0, 14),
+            Image = "rbxassetid://11385220704",
+            Name = "Settings",
+            Visible = EnableSetting
+        })
 
         local MinimizeButton = SetProps(CloseButton:Clone(), {
                 Position = UDim2.new(1, -35, 0.5),
@@ -1148,11 +984,177 @@ local SettingButton = SetProps(CloseButton:Clone(), {
                 Name = "Minimize"
         })
 
+        -- Размещаем кнопки в ButtonsFolder
         SetChildren(ButtonsFolder, {
                 CloseButton,
                 MinimizeButton,
-        SettingButton
+                SettingButton
         })
+
+        -- Добавляем ButtonsFolder в TopBar
+        ButtonsFolder.Parent = TopBar
+        -- Title уже имеет Parent = TopBar
+        -- ////////////////////////////////////////////
+
+
+        -- //////////// ДОБАВЛЕНИЕ: Theme Dropdown в TopBar ///////////////
+        -- Создаём контейнер для Dropdown в TopBar
+        local ThemeDropdownContainer = Create("Frame", TopBar, {
+            Size = UDim2.new(0, 100, 0, 24),
+            -- Позиционируем между Title и ButtonsFolder
+            Position = UDim2.new(0, Title.AbsoluteSize.X + 20, 0.5), -- Примерное позиционирование, может потребоваться точная настройка
+            AnchorPoint = Vector2.new(0, 0.5),
+            BackgroundTransparency = 1,
+            LayoutOrder = 10 -- Чтобы быть после Title и ButtonsFolder, если используется UIListLayout
+        })
+
+        local ThemeDropdown = Create("TextButton", ThemeDropdownContainer, {
+            Size = UDim2.new(1, 0, 1, 0), -- Заполняет контейнер
+            BackgroundColor3 = Theme["Color Stroke"],
+            Text = zerolib.Save.Theme or "Select Theme", -- Отображаем текущую тему
+            TextColor3 = Theme["Color Text"],
+            Font = Enum.Font.GothamSemibold,
+            TextSize = 11,
+            AutoButtonColor = false
+        })
+        InsertTheme(ThemeDropdown, "Stroke") -- Используем InsertTheme для темы
+        Make("Corner", ThemeDropdown, UDim.new(0, 4))
+
+        local Arrow = Create("ImageLabel", ThemeDropdown, {
+            Size = UDim2.new(0, 12, 0, 12),
+            Position = UDim2.new(1, -15, 0.5),
+            AnchorPoint = Vector2.new(1, 0.5),
+            Image = "rbxassetid://10709791523",
+            BackgroundTransparency = 1
+        })
+        InsertTheme(Arrow, "Text") -- Применяем тему к иконке, если нужно (например, для TextColor3)
+
+        -- Выпадающий список тем (используем DropdownHolder для правильного позиционирования)
+        local NoClickFrame = Create("TextButton", DropdownHolder, { -- Используем DropdownHolder
+            Name = "AntiClick_Theme",
+            Size = UDim2.new(1, 0, 1, 0),
+            BackgroundTransparency = 1,
+            Visible = false,
+            Text = ""
+        })
+
+        local ThemeList = Create("ScrollingFrame", NoClickFrame, {
+            Size = UDim2.new(0, 100, 0, 0),
+            -- Позиция будет обновляться при открытии
+            BackgroundColor3 = Theme["Color Hub 2"],
+            -- Используем стили, как в AddDropdown
+            ScrollBarImageColor3 = Theme["Color Theme"],
+            ScrollBarThickness = 1.5,
+            BackgroundTransparency = 1,
+            ScrollBarImageTransparency = 0.2,
+            BorderSizePixel = 0,
+            CanvasSize = UDim2.new(),
+            ScrollingDirection = "Y",
+            AutomaticCanvasSize = "Y", -- Важно для динамического размера
+            Active = true,
+            ClipsDescendants = true,
+            ZIndex = 100
+        })
+        InsertTheme(ThemeList, "ScrollBar") -- Применяем тему скролла
+        Make("Corner", ThemeList, UDim.new(0, 4))
+        Make("Stroke", ThemeList, { Color = Theme["Color Stroke"] }) -- Применяем обводку
+
+        -- Используем UIListLayout, как в AddDropdown
+        local ListLayout = Create("UIListLayout", ThemeList, {
+            SortOrder = Enum.SortOrder.LayoutOrder,
+            Padding = UDim.new(0, 4) -- Стандартный отступ для элементов списка
+        })
+
+        -- Заполнение списка
+        local themes = {"Red", "Darker", "Dark", "Purple", "NeonBlue", "Sunset", "Ocean", "RoseGold", "Matrix", "Green", "Orange", "Pink", "Gold", "Cyan"}
+
+        -- Функция для обновления высоты списка
+        local function updateThemeListHeight()
+            local count = #themes
+            local height = math.min(10, count) * 25 + 10 -- Примерно как в AddDropdown
+            return UDim2.new(0, 100, 0, height)
+        end
+
+        -- Функция для обновления позиции списка
+        local function updateThemeListPosition()
+            --local screenH = workspace.CurrentCamera.ViewportSize.Y / UIScale
+            --local y_pos = ThemeDropdown.AbsolutePosition.Y / UIScale
+            --local anchorY = if y_pos > screenH / 1.4 then 1 else 0
+            --ThemeList.AnchorPoint = Vector2.new(0, anchorY)
+            --ThemeList.Position = UDim2.new(0, ThemeDropdown.AbsolutePosition.X / UIScale, 0, y_pos)
+            -- Позиционируем относительно ThemeDropdown напрямую
+            ThemeList.Position = UDim2.new(0, ThemeDropdown.AbsolutePosition.X / UIScale, 0, (ThemeDropdown.AbsolutePosition.Y + ThemeDropdown.AbsoluteSize.Y) / UIScale)
+        end
+
+        -- Создание кнопок для тем
+        for _, themeName in ipairs(themes) do
+            local ThemeOption = Create("TextButton", ThemeList, {
+                Size = UDim2.new(1, 0, 0, 21),
+                BackgroundTransparency = 1, -- Временно прозрачный, будет подхвачено InsertTheme
+                Text = themeName,
+                TextColor3 = Theme["Color Text"],
+                Font = Enum.Font.Gotham,
+                TextSize = 11,
+                AutoButtonColor = false
+            })
+            -- Применяем тему фона (Frame) и текста
+            InsertTheme(ThemeOption, "Frame") -- Это даст цвет фона при наведении/нажатии
+            local textLabel = ThemeOption:FindFirstChildWhichIsA("TextLabel") -- Находим встроенный TextLabel
+            if textLabel then
+                InsertTheme(textLabel, "Text") -- Применяем тему текста
+            end
+            Make("Corner", ThemeOption, UDim.new(0, 4))
+
+            ThemeOption.MouseButton1Click:Connect(function()
+                zerolib:SetTheme(themeName)
+                ThemeDropdown.Text = themeName -- Обновляем отображение в Dropdown
+                -- Закрываем список
+                NoClickFrame.Visible = false
+                Arrow.Rotation = 0
+            end)
+
+            ThemeOption.MouseEnter:Connect(function()
+                if ThemeOption.BackgroundColor3 == Theme["Color Hub 2"] then
+                    -- Меняем цвет фона при наведении, если это не выбранная тема
+                    ThemeOption.BackgroundTransparency = 0.4
+                end
+            end)
+
+            ThemeOption.MouseLeave:Connect(function()
+                ThemeOption.BackgroundTransparency = 1
+            end)
+
+        end
+
+        -- Переменная для отслеживания состояния списка
+        local isThemeListOpen = false
+
+        -- Toggle выпадающего списка
+        ThemeDropdown.MouseButton1Click:Connect(function()
+            isThemeListOpen = not isThemeListOpen
+
+            if isThemeListOpen then
+                -- Обновляем позицию перед отображением
+                updateThemeListPosition()
+                -- Обновляем размер
+                ThemeList.Size = updateThemeListHeight()
+                -- Показываем
+                NoClickFrame.Visible = true
+                Arrow.Rotation = 180
+            else
+                -- Скрываем
+                NoClickFrame.Visible = false
+                Arrow.Rotation = 0
+            end
+        end)
+
+        -- Закрытие списка при клике вне его (используя NoClickFrame)
+        NoClickFrame.MouseButton1Down:Connect(function()
+            isThemeListOpen = false
+            NoClickFrame.Visible = false
+            Arrow.Rotation = 0
+        end)
+        -- //////////// КОНЕЦ ДОБАВЛЕНИЯ ///////////////
 
         local Minimized, SaveSize, WaitClick
         local Window, FirstTab = {}, false
@@ -1527,7 +1529,7 @@ end)
                 }), "Stroke")
 
                 MainCorner:Clone().Parent = Screen
-                Frame.Parent = Screen
+Frame.Parent = Screen
                 CreateTween({Frame, "Size", UDim2.fromOffset(250, 150), 0.2})
                 CreateTween({Frame, "Transparency", 0, 0.15})
                 CreateTween({Screen, "Transparency", 0.3, 0.15})
@@ -2424,7 +2426,7 @@ function Tab:AddButton(Configs)
 
                         local ButtonIcon = Create("ImageLabel", FButton, {
                                 Size = UDim2.new(0, 14, 0, 14),
-                                Position = UDim2.new(1, -10, 0.5),
+                                Position = UDim2.new(1, -10, 0.5, 0),
                                 AnchorPoint = Vector2.new(1, 0.5),
                                 BackgroundTransparency = 1,
                                 Image = "rbxassetid://10709791437"
@@ -2680,7 +2682,7 @@ updateSelectedFrameSize()
                         })
 
                         local DropFrame = Create("Frame", NoClickFrame, {
-                                Size = UDim2.new(SelectedFrame.Size.X, 0, 0),
+                                Size = UDim2.new(0, 152, 0, 0),
                                 BackgroundTransparency = 0.1,
                                 BackgroundColor3 = Color3.fromRGB(255, 255, 255),
                                 AnchorPoint = Vector2.new(0, 1),
@@ -4387,11 +4389,6 @@ local function mobileOffset()
     return isMobile and -200 or 0
 end
 
-local function SetScale(Scale)
-        NewScale = ViewportSize.Y / math.clamp(Scale, 300, 2000)
-        UIScale, ScreenGui.Scale.Scale = NewScale, NewScale
-end
-
 Tab:AddDropdown({
     Name = "UI Size",
     Options = {"Small", "Medium", "Large", "Custom"},
@@ -4402,16 +4399,16 @@ Tab:AddDropdown({
         local offset = mobileOffset()
 
         if v == "Small" then
-            SetScale(700 + offset)
+            zerolib:SetScale(700 + offset)
 
         elseif v == "Medium" then
-            SetScale(600 + offset)
+            zerolib:SetScale(600 + offset)
 
         elseif v == "Large" then
-            SetScale(500 + offset)
+            zerolib:SetScale(500 + offset)
 
         elseif v == "Custom" then
-            SetScale(customUIsize + offset)
+            zerolib:SetScale(customUIsize + offset)
         end
     end,
     __force_container = SettingTab
@@ -4426,7 +4423,7 @@ Tab:AddSlider({
     Callback = function(value)
         customUIsize = value
         if uiSizeMode == "Custom" then
-            SetScale(customUIsize + mobileOffset())
+            zerolib:SetScale(customUIsize + mobileOffset())
         end
     end,
    __force_container = SettingTab
