@@ -1,596 +1,361 @@
+--[[
+    XeroLib v2.8 - Smart Icon System
+    Author: Bytox
+    Features:
+    - Load icons from Pastefy URL
+    - Access by name (loaded from Pastefy)
+    - Direct rbxassetid:// support
+    - Built-in fallback icons
+]]
+
 local XeroLib = {}
 XeroLib.__index = XeroLib
+XeroLib.Version = "2.8.0"
 
--- 3 ОСНОВНЫЕ ТЕМЫ
+-- Минимальные встроенные иконки для работы
+XeroLib.FallbackIcons = {
+    ["fallback"] = "rbxassetid://7733919881", -- circle
+    ["home"] = "rbxassetid://7733914390", -- book
+    ["settings"] = "rbxassetid://7733911828", -- bell
+    ["run"] = "rbxassetid://7733678330", -- bike
+    ["stop"] = "rbxassetid://7733674153", -- banknote
+    ["check"] = "rbxassetid://7733715400",
+    ["error"] = "rbxassetid://7733658335",
+}
+
+-- Основная таблица (начинаем с фолбэков)
+XeroLib.Icons = XeroLib.FallbackIcons
+
+-- ЗАГРУЗКА ИКОНОК С PASTEFY
+function XeroLib:LoadIcons()
+    local pastefyURL = "https://pastefy.app/GJsDsU1d/raw"
+    
+    local success, result = pcall(function()
+        local iconCode = game:HttpGet(pastefyURL, true)
+        local iconLoader = loadstring(iconCode)
+        if not iconLoader then return nil end
+        
+        local iconData = iconLoader()
+        
+        -- Поддержка разных форматов
+        if type(iconData) == "table" then
+            if iconData.Data then
+                return iconData.Data
+            elseif iconData.Get then
+                return iconData.Get()
+            else
+                return iconData
+            end
+        end
+        
+        return nil
+    end)
+    
+    if success and result then
+        -- Добавляем загруженные иконки
+        local count = 0
+        for name, assetId in pairs(result) do
+            XeroLib.Icons[name] = assetId
+            count = count + 1
+        end
+        print(string.format("XeroLib: Loaded %d icons from Pastefy", count))
+        return true
+    else
+        warn("XeroLib: Using fallback icons only")
+        return false
+    end
+end
+
+-- УМНАЯ ФУНКЦИЯ ПОЛУЧЕНИЯ ИКОНКИ
+function XeroLib:GetIcon(iconSource)
+    -- Если передан rbxassetid напрямую - возвращаем как есть
+    if type(iconSource) == "string" and iconSource:find("^rbxassetid://") then
+        return iconSource
+    end
+    
+    -- Если передан номер (id)
+    if type(iconSource) == "number" then
+        return "rbxassetid://" .. tostring(iconSource)
+    end
+    
+    -- Если это строка, проверяем в таблице иконок
+    if type(iconSource) == "string" then
+        local icon = XeroLib.Icons[iconSource]
+        if icon then
+            return icon
+        else
+            -- Если нет в таблице, но похоже на ID
+            if iconSource:match("^%d+$") then
+                return "rbxassetid://" .. iconSource
+            end
+            return nil -- не нашли
+        end
+    end
+    
+    return nil
+end
+
+-- ПРОВЕРКА: это rbxassetid или имя иконки?
+function XeroLib:IsRbxAssetId(source)
+    return type(source) == "string" and source:find("^rbxassetid://")
+end
+
+-- ДОБАВЛЕНИЕ СВОЕЙ ИКОНКИ В БИБЛИОТЕКУ
+function XeroLib:AddIcon(name, assetId)
+    if name and assetId then
+        XeroLib.Icons[name] = assetId
+        return true
+    end
+    return false
+end
+
+-- NOTIFICATION TYPES
+XeroLib.NotifyType = {
+    INFO = { Color = Color3.fromRGB(0, 120, 215), Icon = "📘" },
+    SUCCESS = { Color = Color3.fromRGB(0, 200, 83), Icon = "✅" },
+    WARNING = { Color = Color3.fromRGB(255, 185, 0), Icon = "⚠️" },
+    ERROR = { Color = Color3.fromRGB(255, 60, 60), Icon = "❌" }
+}
+
+-- ТЕМЫ (упрощенные)
 XeroLib.Themes = {
-    -- 1. Классическая тёмная (базовая)
     Dark = {
-        Name = "Dark",
-        Background = Color3.fromRGB(20, 20, 20),
-        Foreground = Color3.fromRGB(30, 30, 30),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(255, 255, 255),
-        Border = Color3.fromRGB(60, 60, 60),
-        Button = Color3.fromRGB(40, 40, 40),
-        ToggleOn = Color3.fromRGB(0, 200, 0),
-        ToggleOff = Color3.fromRGB(80, 0, 0),
-        Slider = Color3.fromRGB(255, 255, 255)
-    },
-    
-    -- 2. Фиолетовая (самая популярная в Roblox)
-    Purple = {
-        Name = "Purple",
-        Background = Color3.fromRGB(25, 15, 35),
-        Foreground = Color3.fromRGB(40, 25, 50),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(180, 80, 255),
-        Border = Color3.fromRGB(100, 50, 180),
-        Button = Color3.fromRGB(50, 30, 70),
-        ToggleOn = Color3.fromRGB(140, 0, 255),
-        ToggleOff = Color3.fromRGB(70, 0, 140),
-        Slider = Color3.fromRGB(180, 80, 255)
-    },
-    
-    -- 3. Синяя (чистая и современная)
-    Blue = {
-        Name = "Blue",
-        Background = Color3.fromRGB(15, 20, 35),
-        Foreground = Color3.fromRGB(25, 35, 55),
-        Text = Color3.fromRGB(255, 255, 255),
-        Accent = Color3.fromRGB(80, 150, 255),
-        Border = Color3.fromRGB(60, 110, 200),
-        Button = Color3.fromRGB(35, 50, 80),
-        ToggleOn = Color3.fromRGB(0, 120, 255),
-        ToggleOff = Color3.fromRGB(0, 60, 120),
-        Slider = Color3.fromRGB(80, 150, 255)
+        Background = Color3.fromRGB(18, 18, 18),
+        Foreground = Color3.fromRGB(28, 28, 28),
+        Text = Color3.fromRGB(240, 240, 240),
+        Button = Color3.fromRGB(38, 38, 38),
+        ButtonHover = Color3.fromRGB(48, 48, 48),
+        ToggleOn = Color3.fromRGB(0, 180, 0),
+        ToggleOff = Color3.fromRGB(70, 20, 20),
+        TabActive = Color3.fromRGB(40, 40, 40),
     }
 }
-
--- Текущая тема
 XeroLib.CurrentTheme = XeroLib.Themes.Dark
 
--- Массив для хранения всех созданных элементов (для обновления темы)
-XeroLib.Registry = {
-    Frames = {},
-    Buttons = {},
-    Toggles = {},
-    Sliders = {},
-    Labels = {}
-}
-
+-- Services
 local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local UserInputService = game:GetService("UserInputService")
 
+-- Utility
 local function Create(class, props)
-	local obj = Instance.new(class)
-	for k,v in pairs(props or {}) do
-		if k ~= "Parent" then
-			obj[k] = v
-		end
-	end
-	if props and props.Parent then
-		obj.Parent = props.Parent
-	end
-	return obj
+    local obj = Instance.new(class)
+    for k, v in pairs(props or {}) do
+        if k ~= "Parent" then
+            obj[k] = v
+        end
+    end
+    if props and props.Parent then
+        obj.Parent = props.Parent
+    end
+    return obj
 end
 
-function XeroLib:New(title)
-	local selfObj = setmetatable({}, XeroLib)
-	selfObj.ScreenGui = Create("ScreenGui", {Parent = game.CoreGui, Name = "XeroLib"})
-	selfObj.MainFrame = Create("Frame", {
-		Parent = selfObj.ScreenGui,
-		Size = UDim2.new(0, 550, 0, 350),
-		Position = UDim2.new(0.5, -275, 0.5, -175),
-		BackgroundColor3 = selfObj.CurrentTheme.Background,
-		BorderColor3 = selfObj.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		Active = true,
-		Draggable = true
-	})
-	selfObj.Title = Create("TextLabel", {
-		Parent = selfObj.MainFrame,
-		Size = UDim2.new(1,0,0,45),
-		BackgroundColor3 = selfObj.CurrentTheme.Foreground,
-		BorderColor3 = selfObj.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		Text = title or "Xero Hub",
-		TextColor3 = selfObj.CurrentTheme.Text,
-		Font = Enum.Font.GothamBold,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextSize = 20
-	})
-	selfObj.SubTitle = Create("TextLabel", {
-		Parent = selfObj.MainFrame,
-		Size = UDim2.new(1,0,0,20),
-		Position = UDim2.new(0,0,0,25),
-		BackgroundTransparency = 1,
-		Text = "by Bytox",
-		TextColor3 = Color3.fromRGB(200,200,200),
-		Font = Enum.Font.Gotham,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextSize = 14
-	})
-	selfObj.HideButton = Create("ImageButton", {
-		Parent = selfObj.ScreenGui,
-		Size = UDim2.new(0,40,0,40),
-		Position = UDim2.new(1,-60,1,-60),
-		BackgroundColor3 = selfObj.CurrentTheme.Foreground,
-		BorderColor3 = selfObj.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		Image = "rbxassetid://89313692535877",
-		ZIndex = 10
-	})
-	local visible = true
-	selfObj.HideButton.MouseButton1Click:Connect(function()
-		visible = not visible
-		selfObj.MainFrame.Visible = visible
-	end)
-	selfObj.TabList = Create("ScrollingFrame", {
-		Parent = selfObj.MainFrame,
-		Position = UDim2.new(0,0,0,45),
-		Size = UDim2.new(0,130,1,-45),
-		BackgroundColor3 = selfObj.CurrentTheme.Background,
-		BorderColor3 = selfObj.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		ScrollBarThickness = 6,
-		ScrollBarImageColor3 = selfObj.CurrentTheme.Accent,
-		CanvasSize = UDim2.new(0,0,0,0)
-	})
-	local tabLayout = Create("UIListLayout", {
-		Parent = selfObj.TabList,
-		Padding = UDim.new(0,6),
-		SortOrder = Enum.SortOrder.LayoutOrder
-	})
-	tabLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		selfObj.TabList.CanvasSize = UDim2.new(0,0,0,tabLayout.AbsoluteContentSize.Y)
-	end)
-	selfObj.Content = Create("Frame", {
-		Parent = selfObj.MainFrame,
-		Position = UDim2.new(0,130,0,45),
-		Size = UDim2.new(1,-130,1,-45),
-		BackgroundColor3 = selfObj.CurrentTheme.Background,
-		BorderColor3 = selfObj.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		ClipsDescendants = true
-	})
-	selfObj.PageLayout = Create("UIPageLayout", {
-		Parent = selfObj.Content,
-		Animated = true,
-		Circular = false,
-		TweenTime = 0.3,
-		TouchInputEnabled = true,
-		ScrollWheelInputEnabled = true
-	})
-	selfObj.PageLayout.Stopped:Connect(function(currentPage)
-		for name, scrollFrame in pairs(selfObj.Tabs) do
-			if scrollFrame == currentPage then
-				for _, btn in pairs(selfObj.TabButtons) do
-					btn.BackgroundColor3 = selfObj.CurrentTheme.Foreground
-				end
-				if selfObj.TabButtons[name] then
-					selfObj.TabButtons[name].BackgroundColor3 = Color3.fromRGB(50,50,50)
-				end
-				break
-			end
-		end
-	end)
-	selfObj.Tabs = {}
-	selfObj.TabButtons = {}
-	return selfObj
+local function ApplyCorners(obj, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius)
+    corner.Parent = obj
+    return corner
 end
 
-function XeroLib:AddTab(name)
-	local button = Create("TextButton", {
-		Parent = self.TabList,
-		Size = UDim2.new(1,-10,0,35),
-		Text = name,
-		BackgroundColor3 = self.CurrentTheme.Foreground,
-		BorderColor3 = self.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		TextColor3 = self.CurrentTheme.Text,
-		Font = Enum.Font.GothamBold,
-		TextSize = 16,
-		AutoButtonColor = false
-	})
-	local scroll = Create("ScrollingFrame", {
-		Parent = self.Content,
-		Size = UDim2.new(1,0,1,0),
-		CanvasSize = UDim2.new(0,0,0,0),
-		ScrollBarThickness = 8,
-		ScrollBarImageColor3 = self.CurrentTheme.Accent,
-		BackgroundTransparency = 1
-	})
-	local list = Create("UIListLayout", {
-		Parent = scroll,
-		Padding = UDim.new(0,10),
-		SortOrder = Enum.SortOrder.LayoutOrder
-	})
-	list:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		scroll.CanvasSize = UDim2.new(0,0,0,list.AbsoluteContentSize.Y + 20)
-	end)
-	self.TabButtons[name] = button
-	self.Tabs[name] = scroll
-	button.MouseButton1Click:Connect(function()
-		self.PageLayout:JumpTo(scroll)
-		for _, btn in pairs(self.TabButtons) do
-			btn.BackgroundColor3 = self.CurrentTheme.Foreground
-		end
-		button.BackgroundColor3 = Color3.fromRGB(50,50,50)
-	end)
-	if #self.Tabs == 1 then
-		button.BackgroundColor3 = Color3.fromRGB(50,50,50)
-		self.PageLayout:JumpTo(scroll)
-	end
-	return scroll
-end
-
--- Используем обновленную функцию AddButton
-function XeroLib:AddButton(tab, text, callback)
-    local Btn = Create("TextButton", {
-        Parent = tab,
+-- ГЛАВНОЕ ОКНО
+function XeroLib:New(title, loadPastefyIcons)
+    local selfObj = setmetatable({}, XeroLib)
+    
+    -- Автозагрузка иконок с Pastefy
+    if loadPastefyIcons ~= false then
+        selfObj:LoadIcons()
+    end
+    
+    selfObj.ScreenGui = Create("ScreenGui", {
+        Parent = game:GetService("CoreGui"),
+        Name = "XeroLib",
+        ResetOnSpawn = false
+    })
+    
+    selfObj.MainFrame = Create("Frame", {
+        Parent = selfObj.ScreenGui,
+        Size = UDim2.new(0, 500, 0, 350),
+        Position = UDim2.new(0.5, -250, 0.5, -175),
+        BackgroundColor3 = selfObj.CurrentTheme.Background,
+        BorderSizePixel = 0,
+        Active = true,
+        Draggable = true
+    })
+    
+    ApplyCorners(selfObj.MainFrame, 8)
+    
+    -- Title
+    Create("TextLabel", {
+        Parent = selfObj.MainFrame,
         Size = UDim2.new(1, 0, 0, 40),
-        Text = text,
+        Text = title or "Xero Hub",
+        TextColor3 = selfObj.CurrentTheme.Text,
         Font = Enum.Font.GothamBold,
-        TextSize = 16,
-        TextColor3 = self.CurrentTheme.Text,
-        BackgroundColor3 = self.CurrentTheme.Button,
-        BorderColor3 = self.CurrentTheme.Border,
-        BorderSizePixel = 2,
-        AutoButtonColor = false
+        TextSize = 18,
+        BackgroundColor3 = selfObj.CurrentTheme.Foreground,
+        BorderSizePixel = 0
     })
     
-    -- Анимация наведения
-    Btn.MouseEnter:Connect(function()
-        Btn.BackgroundColor3 = Color3.fromRGB(
-            math.min(self.CurrentTheme.Button.R * 255 + 20, 255),
-            math.min(self.CurrentTheme.Button.G * 255 + 20, 255),
-            math.min(self.CurrentTheme.Button.B * 255 + 20, 255)
-        )
-    end)
+    ApplyCorners(selfObj.MainFrame:FindFirstChildOfClass("TextLabel"), 8)
     
-    Btn.MouseLeave:Connect(function()
-        Btn.BackgroundColor3 = self.CurrentTheme.Button
-    end)
+    -- Tab area
+    selfObj.TabList = Create("ScrollingFrame", {
+        Parent = selfObj.MainFrame,
+        Size = UDim2.new(0, 120, 1, -40),
+        Position = UDim2.new(0, 0, 0, 40),
+        BackgroundColor3 = selfObj.CurrentTheme.Background,
+        BorderSizePixel = 0,
+        ScrollBarThickness = 4
+    })
     
-    Btn.MouseButton1Click:Connect(callback)
+    -- Content area
+    selfObj.Content = Create("Frame", {
+        Parent = selfObj.MainFrame,
+        Position = UDim2.new(0, 120, 0, 40),
+        Size = UDim2.new(1, -120, 1, -40),
+        BackgroundColor3 = selfObj.CurrentTheme.Background,
+        BorderSizePixel = 0
+    })
     
-    -- Сохраняем для обновления темы
-    table.insert(self.Registry.Buttons, Btn)
+    selfObj.Tabs = {}
+    selfObj.TabButtons = {}
     
-    return Btn
+    return selfObj
 end
 
--- Используем обновленную функцию AddToggle
-function XeroLib:AddToggle(tab, text, default, callback)
-    local toggleFrame = Create("Frame", {
-        Parent = tab,
-        Size = UDim2.new(1, 0, 0, 40),
-        BackgroundColor3 = self.CurrentTheme.Foreground,
-        BorderColor3 = self.CurrentTheme.Border,
-        BorderSizePixel = 2
-    })
+-- ВКЛАДКА С УМНОЙ ИКОНКОЙ
+function XeroLib:AddTab(name, iconSource)
+    -- Умное получение иконки
+    local icon = self:GetIcon(iconSource)
     
-    local title = Create("TextLabel", {
-        Parent = toggleFrame,
-        Size = UDim2.new(0.7, 0, 1, 0),
-        Position = UDim2.new(0, 10, 0, 0),
-        Text = text,
+    local button = Create("TextButton", {
+        Parent = self.TabList,
+        Size = UDim2.new(1, -10, 0, 35),
+        Position = UDim2.new(0, 5, 0, (#self.TabButtons * 40) + 5),
+        Text = name,
         TextColor3 = self.CurrentTheme.Text,
-        BackgroundTransparency = 1,
-        Font = Enum.Font.GothamBold,
-        TextSize = 16,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-    
-    local btn = Create("TextButton", {
-        Parent = toggleFrame,
-        Size = UDim2.new(0.25, 0, 0.7, 0),
-        Position = UDim2.new(0.72, 0, 0.15, 0),
-        Text = default and "ON" or "OFF",
-        TextColor3 = self.CurrentTheme.Text,
-        BackgroundColor3 = default and self.CurrentTheme.ToggleOn or self.CurrentTheme.ToggleOff,
         Font = Enum.Font.GothamBold,
         TextSize = 14,
+        BackgroundColor3 = self.CurrentTheme.Foreground,
         BorderSizePixel = 0,
         AutoButtonColor = false
     })
     
-    btn.MouseButton1Click:Connect(function()
-        default = not default
-        btn.Text = default and "ON" or "OFF"
-        btn.BackgroundColor3 = default and self.CurrentTheme.ToggleOn or self.CurrentTheme.ToggleOff
-        callback(default)
-    end)
+    ApplyCorners(button, 6)
     
-    -- Сохраняем
-    table.insert(self.Registry.Toggles, {Frame = toggleFrame, Button = btn})
-    
-    return toggleFrame
-end
-
--- Используем обновленную функцию AddSlider
-function XeroLib:AddSlider(tab, text, min, max, default, callback)
-	local frame = Create("Frame", {
-		Parent = tab,
-		Size = UDim2.new(1,0,0,45),
-		BackgroundColor3 = self.CurrentTheme.Foreground,
-		BorderColor3 = self.CurrentTheme.Border,
-		BorderSizePixel = 2
-	})
-	local label = Create("TextLabel", {
-		Parent = frame,
-		Size = UDim2.new(1,-10,0,20),
-		Position = UDim2.new(0,10,0,0),
-		Text = text.." : "..default,
-		TextColor3 = self.CurrentTheme.Text,
-		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
-		TextSize = 16,
-		TextXAlignment = Enum.TextXAlignment.Left
-	})
-	local bar = Create("Frame", {
-		Parent = frame,
-		Size = UDim2.new(0.9,0,0,12),
-		Position = UDim2.new(0.05,0,0,28),
-		BackgroundColor3 = Color3.fromRGB(40,40,40),
-		BorderSizePixel = 0
-	})
-	Instance.new("UICorner", bar).CornerRadius = UDim.new(0,6)
-	local fill = Create("Frame", {
-		Parent = bar,
-		Size = UDim2.new((default-min)/(max-min),0,1,0),
-		BackgroundColor3 = self.CurrentTheme.Slider,
-		BorderSizePixel = 0
-	})
-	Instance.new("UICorner", fill).CornerRadius = UDim.new(0,6)
-	local handle = Create("Frame", {
-		Parent = fill,
-		Size = UDim2.new(0,16,0,16),
-		AnchorPoint = Vector2.new(0.5,0.5),
-		Position = UDim2.new(1,0,0.5,0),
-		BackgroundColor3 = Color3.fromRGB(150,150,150),
-		BorderSizePixel = 0
-	})
-	Instance.new("UICorner", handle).CornerRadius = UDim.new(1,0)
-	local dragging = false
-	local function updateInput(input)
-		local rel = math.clamp((input.Position.X - bar.AbsolutePosition.X) / bar.AbsoluteSize.X, 0, 1)
-		local val = math.floor(min + (max - min) * rel)
-		fill.Size = UDim2.new(rel,0,1,0)
-		label.Text = text.." : "..val
-		callback(val)
-	end
-	bar.InputBegan:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = true
-			updateInput(input)
-		end
-	end)
-	bar.InputEnded:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-			dragging = false
-		end
-	end)
-	UserInputService.InputChanged:Connect(function(input)
-		if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-			updateInput(input)
-		end
-	end)
-	return frame
-end
-
--- Используем обновленную функцию AddDropdown
-function XeroLib:AddDropdown(tab, text, options, callback)
-	local frame = Create("Frame", {
-		Parent = tab,
-		Size = UDim2.new(1,0,0,40),
-		BackgroundColor3 = self.CurrentTheme.Foreground,
-		BorderColor3 = self.CurrentTheme.Border,
-		BorderSizePixel = 2
-	})
-	local title = Create("TextLabel", {
-		Parent = frame,
-		Size = UDim2.new(0.7,0,1,0),
-		Position = UDim2.new(0,10,0,0),
-		Text = text,
-		TextColor3 = self.CurrentTheme.Text,
-		BackgroundTransparency = 1,
-		Font = Enum.Font.GothamBold,
-		TextSize = 16,
-		TextXAlignment = Enum.TextXAlignment.Left
-	})
-	local btn = Create("TextButton", {
-		Parent = frame,
-		Size = UDim2.new(0.25,0,0.7,0),
-		Position = UDim2.new(0.72,0,0.15,0),
-		Text = "▼",
-		TextColor3 = self.CurrentTheme.Text,
-		BackgroundColor3 = self.CurrentTheme.Button,
-		Font = Enum.Font.GothamBold,
-		TextSize = 14,
-		BorderSizePixel = 0,
-		AutoButtonColor = false
-	})
-	local dropdownFrame = Create("ScrollingFrame", {
-		Parent = frame,
-		Size = UDim2.new(1,0,0,0),
-		Position = UDim2.new(0,0,1,0),
-		CanvasSize = UDim2.new(0,0,0,0),
-		ScrollBarThickness = 6,
-		BackgroundColor3 = self.CurrentTheme.Foreground,
-		BorderColor3 = self.CurrentTheme.Border,
-		BorderSizePixel = 2,
-		Visible = false
-	})
-	local listLayout = Create("UIListLayout", {
-		Parent = dropdownFrame,
-		Padding = UDim.new(0,2),
-		SortOrder = Enum.SortOrder.LayoutOrder
-	})
-	listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-		dropdownFrame.CanvasSize = UDim2.new(0,0,0,listLayout.AbsoluteContentSize.Y)
-		if listLayout.AbsoluteContentSize.Y > 150 then
-			dropdownFrame.Size = UDim2.new(1,0,0,150)
-		else
-			dropdownFrame.Size = UDim2.new(1,0,0,listLayout.AbsoluteContentSize.Y)
-		end
-	end)
-	btn.MouseButton1Click:Connect(function()
-		dropdownFrame.Visible = not dropdownFrame.Visible
-	end)
-	for i, option in ipairs(options) do
-		local optBtn = Create("TextButton", {
-			Parent = dropdownFrame,
-			Size = UDim2.new(1,0,0,30),
-			Text = option,
-			Font = Enum.Font.GothamBold,
-			TextSize = 14,
-			TextColor3 = self.CurrentTheme.Text,
-			BackgroundColor3 = self.CurrentTheme.Button,
-			BorderSizePixel = 0,
-			AutoButtonColor = false
-		})
-		optBtn.MouseButton1Click:Connect(function()
-			btn.Text = option
-			callback(option)
-			dropdownFrame.Visible = false
-		end)
-	end
-	return frame
-end
-
--- Используем обновленную функцию AddImage
-function XeroLib:AddImage(tab, defaultId)
-	local frame = Create("Frame", {
-		Parent = tab,
-		Size = UDim2.new(1,0,0,120),
-		BackgroundColor3 = self.CurrentTheme.Foreground,
-		BorderColor3 = self.CurrentTheme.Border,
-		BorderSizePixel = 2
-	})
-	local image = Create("ImageLabel", {
-		Parent = frame,
-		Size = UDim2.new(1,0,0,100),
-		Image = "rbxassetid://"..(defaultId or "0"),
-		BackgroundColor3 = self.CurrentTheme.Background,
-		BorderSizePixel = 0
-	})
-	local input = Create("TextBox", {
-		Parent = frame,
-		Size = UDim2.new(1,0,0,20),
-		Position = UDim2.new(0,0,0,100),
-		Text = defaultId or "",
-		TextColor3 = self.CurrentTheme.Text,
-		BackgroundColor3 = self.CurrentTheme.Button,
-		ClearTextOnFocus = false,
-		Font = Enum.Font.Gotham,
-		TextSize = 14
-	})
-	input.FocusLost:Connect(function()
-		local id = input.Text
-		image.Image = "rbxassetid://"..id
-	end)
-	return frame
-end
-
--- Функция смены темы
-function XeroLib:SetTheme(themeName)
-    -- Получаем тему
-    local theme = self.Themes[themeName]
-    if not theme then
-        theme = self.Themes.Dark
-    end
-    
-    -- Сохраняем текущую тему
-    self.CurrentTheme = theme
-    
-    -- Обновляем основные элементы окна
-    self.MainFrame.BackgroundColor3 = theme.Background
-    self.MainFrame.BorderColor3 = theme.Border
-    
-    self.Title.BackgroundColor3 = theme.Foreground
-    self.Title.TextColor3 = theme.Text
-    self.Title.BorderColor3 = theme.Border
-    
-    self.TabList.BackgroundColor3 = theme.Background
-    self.TabList.BorderColor3 = theme.Border
-    
-    self.Content.BackgroundColor3 = theme.Background
-    self.Content.BorderColor3 = theme.Border
-    
-    self.HideButton.BackgroundColor3 = theme.Foreground
-    self.HideButton.BorderColor3 = theme.Border
-    
-    -- Обновляем кнопки вкладок
-    for _, btn in pairs(self.TabButtons) do
-        btn.BackgroundColor3 = theme.Foreground
-        btn.BorderColor3 = theme.Border
-        btn.TextColor3 = theme.Text
-    end
-    
-    -- Если есть активная вкладка - выделяем её
-    for name, btn in pairs(self.TabButtons) do
-        if btn.BackgroundColor3 == Color3.fromRGB(30,30,30) then
-            btn.BackgroundColor3 = Color3.fromRGB(50,50,50)
-        end
-    end
-    
-    return theme
-end
-
--- Функция для выбора темы
-function XeroLib:AddThemeSelector(tab)
-    local frame = Create("Frame", {
-        Parent = tab,
-        Size = UDim2.new(1, 0, 0, 80),
-        BackgroundColor3 = self.CurrentTheme.Foreground,
-        BorderColor3 = self.CurrentTheme.Border,
-        BorderSizePixel = 2
-    })
-    
-    Create("TextLabel", {
-        Parent = frame,
-        Size = UDim2.new(1, 0, 0, 25),
-        Position = UDim2.new(0, 10, 0, 5),
-        Text = "Select Theme:",
-        TextColor3 = self.CurrentTheme.Text,
-        BackgroundTransparency = 1,
-        Font = Enum.Font.GothamBold,
-        TextSize = 16,
-        TextXAlignment = Enum.TextXAlignment.Left
-    })
-    
-    -- Кнопки выбора темы
-    local themes = {"Dark", "Purple", "Blue"}
-    
-    for i, themeName in ipairs(themes) do
-        local themeBtn = Create("TextButton", {
-            Parent = frame,
-            Size = UDim2.new(0.3, 0, 0, 30),
-            Position = UDim2.new((i-1)*0.33 + 0.02, 0, 0, 35),
-            Text = themeName,
-            TextColor3 = self.CurrentTheme.Text,
-            BackgroundColor3 = self.Themes[themeName].Accent,
-            Font = Enum.Font.GothamBold,
-            TextSize = 14,
-            AutoButtonColor = false
+    -- Если есть иконка, добавляем её
+    if icon then
+        local iconImage = Create("ImageLabel", {
+            Parent = button,
+            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(0, 8, 0.5, -10),
+            Image = icon,
+            BackgroundTransparency = 1,
+            ImageColor3 = self.CurrentTheme.Text
         })
         
-        themeBtn.MouseButton1Click:Connect(function()
-            self:SetTheme(themeName)
-            -- Обновляем цвет кнопок тем
-            for _, child in pairs(frame:GetChildren()) do
-                if child:IsA("TextButton") then
-                    child.BackgroundColor3 = self.Themes[child.Text].Accent
-                end
-            end
-            themeBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            themeBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
-        end)
+        button.TextXAlignment = Enum.TextXAlignment.Left
+        button.PaddingLeft = UDim.new(0, 30)
     end
     
-    return frame
+    -- Контент вкладки
+    local tabContent = Create("ScrollingFrame", {
+        Parent = self.Content,
+        Size = UDim2.new(1, 0, 1, 0),
+        BackgroundTransparency = 1,
+        ScrollBarThickness = 8,
+        Visible = #self.Tabs == 0
+    })
+    
+    self.Tabs[name] = tabContent
+    self.TabButtons[name] = button
+    
+    -- Клик по вкладке
+    button.MouseButton1Click:Connect(function()
+        for _, content in pairs(self.Tabs) do
+            content.Visible = false
+        end
+        tabContent.Visible = true
+        
+        for _, btn in pairs(self.TabButtons) do
+            btn.BackgroundColor3 = self.CurrentTheme.Foreground
+        end
+        button.BackgroundColor3 = self.CurrentTheme.TabActive
+    end)
+    
+    if #self.Tabs == 1 then
+        button.BackgroundColor3 = self.CurrentTheme.TabActive
+    end
+    
+    return tabContent
+end
+
+-- КНОПКА С УМНОЙ ИКОНКОЙ
+function XeroLib:AddButton(tab, text, callback, iconSource)
+    -- Умное получение иконки
+    local icon = self:GetIcon(iconSource)
+    
+    local button = Create("TextButton", {
+        Parent = tab,
+        Size = UDim2.new(1, 0, 0, 35),
+        Text = text,
+        TextColor3 = self.CurrentTheme.Text,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        BackgroundColor3 = self.CurrentTheme.Button,
+        BorderSizePixel = 0,
+        AutoButtonColor = false
+    })
+    
+    ApplyCorners(button, 6)
+    
+    -- Если есть иконка, добавляем её
+    if icon then
+        local iconImage = Create("ImageLabel", {
+            Parent = button,
+            Size = UDim2.new(0, 20, 0, 20),
+            Position = UDim2.new(0, 10, 0.5, -10),
+            Image = icon,
+            BackgroundTransparency = 1,
+            ImageColor3 = self.CurrentTheme.Text
+        })
+        
+        button.TextXAlignment = Enum.TextXAlignment.Left
+        button.PaddingLeft = UDim.new(0, 35)
+    end
+    
+    button.MouseButton1Click:Connect(function()
+        if callback then callback() end
+    end)
+    
+    return button
+end
+
+-- ПРИМЕРЫ ИСПОЛЬЗОВАНИЯ
+function XeroLib:ShowExamples()
+    local ui = self:New("XeroLib Demo", true) -- Загружаем иконки с Pastefy
+    
+    -- Пример 1: Иконки из Pastefy по имени
+    local tab1 = ui:AddTab("Pastefy Icons", "home")
+    
+    ui:AddButton(tab1, "Run Script", function()
+        print("Running script")
+    end, "run") -- иконка "run" из Pastefy
+    
+    -- Пример 2: Прямой rbxassetid
+    local tab2 = ui:AddTab("Custom Icons", "rbxassetid://10709781460")
+    
+    ui:AddButton(tab2, "Custom Image", function()
+        print("Custom button clicked")
+    end, "rbxassetid://7733678330") -- прямая ссылка
+    
+    -- Пример 3: Просто ID как число
+    local tab3 = ui:AddTab("By ID", 7733914390) -- число = ID
+    
+    ui:AddButton(tab3, "Test", function()
+        print("Test")
+    end, 7733674153) -- число = ID
+    
+    return ui
 end
 
 return XeroLib
