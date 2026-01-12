@@ -1,6 +1,9 @@
 --[[
-    XeroLib - Complete UI Library
-    Author: Bytox
+    XeroLib - Fixed UI Library
+    Исправлено:
+    1. Позиционирование текста с иконками
+    2. Работа переключателя (Toggle)
+    3. Правильное отображение всех элементов
 ]]
 
 local XeroLib = {}
@@ -18,6 +21,8 @@ XeroLib.Icons = {
     ["book"] = "rbxassetid://7733914390",
     ["bike"] = "rbxassetid://7733678330",
     ["banknote"] = "rbxassetid://7733674153",
+    ["aim"] = "rbxassetid://10709781460",
+    ["sword"] = "rbxassetid://10709781460",
 }
 
 -- Загрузка иконок
@@ -40,14 +45,17 @@ function XeroLib:LoadIcons()
         for name, assetId in pairs(result) do
             XeroLib.Icons[name] = assetId
         end
-        print("Иконки загружены")
+        print("✅ Иконки загружены")
         return true
     end
+    print("⚠️ Использую встроенные иконки")
     return false
 end
 
 -- Получение иконки
 function XeroLib:GetIcon(iconSource)
+    if not iconSource then return nil end
+    
     if type(iconSource) == "string" and iconSource:find("^rbxassetid://") then
         return iconSource
     end
@@ -67,14 +75,6 @@ function XeroLib:GetIcon(iconSource)
     
     return nil
 end
-
--- Уведомления
-XeroLib.NotifyType = {
-    INFO = { Color = Color3.fromRGB(0, 120, 215), Icon = "📘" },
-    SUCCESS = { Color = Color3.fromRGB(0, 200, 83), Icon = "✅" },
-    WARNING = { Color = Color3.fromRGB(255, 185, 0), Icon = "⚠️" },
-    ERROR = { Color = Color3.fromRGB(255, 60, 60), Icon = "❌" }
-}
 
 -- Темы
 XeroLib.Themes = {
@@ -103,7 +103,12 @@ local function Create(class, properties)
             if key == "Parent" then
                 object.Parent = value
             else
-                object[key] = value
+                local success = pcall(function()
+                    object[key] = value
+                end)
+                if not success then
+                    warn("Не удалось установить свойство", key, "для", class)
+                end
             end
         end
     end
@@ -211,48 +216,60 @@ function XeroLib:New(title)
     return selfObj
 end
 
--- Вкладка
+-- Вкладка (ИСПРАВЛЕНО)
 function XeroLib:AddTab(name, iconSource)
     local icon = self:GetIcon(iconSource)
     
-    local button = Create("TextButton", {
+    -- Фрейм для кнопки вкладки
+    local buttonFrame = Create("Frame", {
         Parent = self.TabList,
         Size = UDim2.new(1, -10, 0, 35),
         Position = UDim2.new(0, 5, 0, (#self.TabButtons * 40) + 5),
-        Text = name,
+        BackgroundTransparency = 1
+    })
+    
+    -- Сама кнопка (без текста)
+    local button = Create("TextButton", {
+        Parent = buttonFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = "",
         BackgroundColor3 = self.CurrentTheme.Foreground,
         BorderSizePixel = 0,
-        TextColor3 = self.CurrentTheme.Text,
-        Font = Enum.Font.GothamBold,
-        TextSize = 14,
         AutoButtonColor = false
     })
     
     ApplyCorners(button, 6)
     
+    -- Отдельный TextLabel для текста
+    local textLabel = Create("TextLabel", {
+        Parent = buttonFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = name,
+        TextColor3 = self.CurrentTheme.Text,
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Center
+    })
+    
     -- Добавляем иконку если есть
     if icon then
         local iconImage = Create("ImageLabel", {
-            Parent = button,
+            Parent = buttonFrame,
             Size = UDim2.new(0, 20, 0, 20),
-            Position = UDim2.new(0, 10, 0.5, -10),
+            Position = UDim2.new(0, 15, 0.5, -10),
             Image = icon,
             BackgroundTransparency = 1,
             ImageColor3 = self.CurrentTheme.Text
         })
         
-        -- Создаем UIPadding для сдвига текста
-        local padding = Create("UIPadding", {
-            Parent = button,
-            PaddingLeft = UDim.new(0, 35)
-        })
-        
-        button.TextXAlignment = Enum.TextXAlignment.Left
-    else
-        button.TextXAlignment = Enum.TextXAlignment.Center
+        -- Сдвигаем текст вправо от иконки
+        textLabel.TextXAlignment = Enum.TextXAlignment.Left
+        textLabel.Position = UDim2.new(0, 40, 0, 0)
+        textLabel.Size = UDim2.new(1, -40, 1, 0)
     end
     
-    -- Создаем контент вкладки
+    -- Контент вкладки
     local tabContent = Create("ScrollingFrame", {
         Parent = self.Content,
         Size = UDim2.new(1, 0, 1, 0),
@@ -263,7 +280,7 @@ function XeroLib:AddTab(name, iconSource)
         Visible = #self.Tabs == 0
     })
     
-    -- Layout для элементов вкладки
+    -- Layout для элементов
     local listLayout = Create("UIListLayout", {
         Parent = tabContent,
         Padding = UDim.new(0, 10),
@@ -277,14 +294,14 @@ function XeroLib:AddTab(name, iconSource)
         PaddingRight = UDim.new(0, 10)
     })
     
-    -- Автоматический размер контента
+    -- Авторазмер
     listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
         tabContent.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 20)
     end)
     
-    -- Сохраняем вкладку
+    -- Сохраняем
     self.Tabs[name] = tabContent
-    self.TabButtons[name] = button
+    self.TabButtons[name] = buttonFrame
     
     -- Обработчик клика
     button.MouseButton1Click:Connect(function()
@@ -297,8 +314,11 @@ function XeroLib:AddTab(name, iconSource)
         tabContent.Visible = true
         
         -- Обновляем цвета кнопок
-        for _, btn in pairs(self.TabButtons) do
-            btn.BackgroundColor3 = self.CurrentTheme.Foreground
+        for _, btnFrame in pairs(self.TabButtons) do
+            local btn = btnFrame:FindFirstChildOfClass("TextButton")
+            if btn then
+                btn.BackgroundColor3 = self.CurrentTheme.Foreground
+            end
         end
         
         button.BackgroundColor3 = self.CurrentTheme.TabActive
@@ -312,43 +332,56 @@ function XeroLib:AddTab(name, iconSource)
     return tabContent
 end
 
--- Кнопка
+-- Кнопка (ИСПРАВЛЕНО)
 function XeroLib:AddButton(tab, text, callback, iconSource)
     local icon = self:GetIcon(iconSource)
     
-    local button = Create("TextButton", {
+    -- Фрейм для кнопки
+    local buttonFrame = Create("Frame", {
         Parent = tab,
         Size = UDim2.new(1, 0, 0, 35),
-        Text = text,
+        BackgroundTransparency = 1
+    })
+    
+    -- Кнопка (без текста)
+    local button = Create("TextButton", {
+        Parent = buttonFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = "",
         BackgroundColor3 = self.CurrentTheme.Button,
         BorderSizePixel = 0,
-        TextColor3 = self.CurrentTheme.Text,
-        Font = Enum.Font.GothamBold,
-        TextSize = 14,
         AutoButtonColor = false
     })
     
     ApplyCorners(button, 6)
     
+    -- Отдельный TextLabel для текста
+    local textLabel = Create("TextLabel", {
+        Parent = buttonFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = text,
+        TextColor3 = self.CurrentTheme.Text,
+        BackgroundTransparency = 1,
+        Font = Enum.Font.GothamBold,
+        TextSize = 14,
+        TextXAlignment = Enum.TextXAlignment.Center
+    })
+    
     -- Добавляем иконку
     if icon then
         local iconImage = Create("ImageLabel", {
-            Parent = button,
+            Parent = buttonFrame,
             Size = UDim2.new(0, 20, 0, 20),
-            Position = UDim2.new(0, 10, 0.5, -10),
+            Position = UDim2.new(0, 15, 0.5, -10),
             Image = icon,
             BackgroundTransparency = 1,
             ImageColor3 = self.CurrentTheme.Text
         })
         
-        local padding = Create("UIPadding", {
-            Parent = button,
-            PaddingLeft = UDim.new(0, 35)
-        })
-        
-        button.TextXAlignment = Enum.TextXAlignment.Left
-    else
-        button.TextXAlignment = Enum.TextXAlignment.Center
+        -- Сдвигаем текст
+        textLabel.TextXAlignment = Enum.TextXAlignment.Left
+        textLabel.Position = UDim2.new(0, 40, 0, 0)
+        textLabel.Size = UDim2.new(1, -40, 1, 0)
     end
     
     -- Эффекты наведения
@@ -367,10 +400,10 @@ function XeroLib:AddButton(tab, text, callback, iconSource)
         end
     end)
     
-    return button
+    return buttonFrame
 end
 
--- Переключатель
+-- Переключатель (ИСПРАВЛЕНО)
 function XeroLib:AddToggle(tab, text, default, callback, iconSource)
     local icon = self:GetIcon(iconSource)
     
@@ -383,7 +416,7 @@ function XeroLib:AddToggle(tab, text, default, callback, iconSource)
     
     ApplyCorners(frame, 6)
     
-    -- Текст
+    -- Текст переключателя
     local textLabel = Create("TextLabel", {
         Parent = frame,
         Size = UDim2.new(0.7, 0, 1, 0),
@@ -407,18 +440,22 @@ function XeroLib:AddToggle(tab, text, default, callback, iconSource)
             ImageColor3 = self.CurrentTheme.Text
         })
         
+        -- Сдвигаем текст
         textLabel.Position = UDim2.new(0, 35, 0, 0)
         textLabel.Size = UDim2.new(0.65, 0, 1, 0)
     end
+    
+    -- Переменная состояния (нужно сохранить в локальной области видимости)
+    local toggleState = default
     
     -- Кнопка переключателя
     local toggleBtn = Create("TextButton", {
         Parent = frame,
         Size = UDim2.new(0, 60, 0, 25),
         Position = UDim2.new(1, -70, 0.5, -12.5),
-        Text = default and "ON" or "OFF",
+        Text = toggleState and "ON" or "OFF",
         TextColor3 = self.CurrentTheme.Text,
-        BackgroundColor3 = default and self.CurrentTheme.ToggleOn or self.CurrentTheme.ToggleOff,
+        BackgroundColor3 = toggleState and self.CurrentTheme.ToggleOn or self.CurrentTheme.ToggleOff,
         Font = Enum.Font.GothamBold,
         TextSize = 12,
         BorderSizePixel = 0,
@@ -427,52 +464,20 @@ function XeroLib:AddToggle(tab, text, default, callback, iconSource)
     
     ApplyCorners(toggleBtn, 6)
     
+    -- Обработчик клика
     toggleBtn.MouseButton1Click:Connect(function()
-        default = not default
-        toggleBtn.Text = default and "ON" or "OFF"
-        toggleBtn.BackgroundColor3 = default and self.CurrentTheme.ToggleOn or self.CurrentTheme.ToggleOff
+        toggleState = not toggleState
+        toggleBtn.Text = toggleState and "ON" or "OFF"
+        toggleBtn.BackgroundColor3 = toggleState and self.CurrentTheme.ToggleOn or self.CurrentTheme.ToggleOff
         
         if callback then
-            callback(default)
+            callback(toggleState)
         end
+        
+        print("Toggle '" .. text .. "' changed to:", toggleState)
     end)
     
     return frame
-end
-
--- Пример использования
-function XeroLib:Test()
-    local ui = self:New("XeroLib Test")
-    
-    local mainTab = ui:AddTab("Главная", "home")
-    local settingsTab = ui:AddTab("Настройки", "settings")
-    
-    -- Кнопки с разными типами иконок
-    ui:AddButton(mainTab, "Запустить скрипт", function()
-        print("Скрипт запущен!")
-    end, "run")
-    
-    ui:AddButton(mainTab, "Остановить", function()
-        print("Скрипт остановлен!")
-    end, "stop")
-    
-    -- Прямой rbxassetid
-    ui:AddButton(mainTab, "Прямая иконка", function()
-        print("Прямая иконка работает!")
-    end, "rbxassetid://7733674153")
-    
-    -- Переключатель
-    ui:AddToggle(mainTab, "Авто-фарм", false, function(state)
-        print("Авто-фарм:", state)
-    end, "check")
-    
-    -- Вторая вкладка
-    ui:AddButton(settingsTab, "Инфо", function()
-        print("Информация")
-    end, "bell")
-    
-    print("XeroLib тест создан!")
-    return ui
 end
 
 return XeroLib
